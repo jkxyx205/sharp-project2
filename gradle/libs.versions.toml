@@ -1,0 +1,16 @@
+[versions]
+spring-boot = "3.5.7"
+dependency-management = "1.1.7"
+
+sharp = "0.0.1-SNAPSHOT"
+
+guava = "33.5.0-jre"
+collections4 = "4.5.0"
+
+[libraries]
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+collections4 = { module = "org.apache.commons:commons-collections4", version.ref = "collections4" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+dependency-management = { id = "io.spring.dependency-management", version.ref = "dependency-management" }

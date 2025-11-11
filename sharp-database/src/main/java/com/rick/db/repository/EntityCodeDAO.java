@@ -1,0 +1,24 @@
+package com.rick.db.repository;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * @author Rick.Xu
+ * @date 2025/8/20 14:00
+ */
+public interface EntityCodeDAO<T, ID> extends EntityDAO<T, ID> {
+
+    Optional<T> selectByCode(@NotBlank String code);
+
+    List<T> selectByCodes(@NotEmpty Collection<String> codes);
+
+    Optional<ID> selectIdByCode(@NotBlank String code);
+
+    List<ID> selectIdsByCodes(@NotEmpty Collection<String> codes);
+
+}

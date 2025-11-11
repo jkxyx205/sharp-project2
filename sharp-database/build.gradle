@@ -1,0 +1,34 @@
+plugins {
+    id 'java'
+    id 'java-library'
+}
+apply plugin: 'org.springframework.boot'
+
+group = 'com.rick.db'
+version = libs.versions.sharp.get()
+description = 'sharp-database'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+dependencies {
+    api project(':sharp-common')
+    api 'org.springframework.boot:spring-boot-starter-validation'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+repositories {
+    mavenLocal()
+
+    maven { url 'https://maven.aliyun.com/repository/public/'}
+    maven { url 'https://maven.aliyun.com/repository/spring/'}
+
+    mavenCentral()
+}
+

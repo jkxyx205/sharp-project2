@@ -1,0 +1,67 @@
+plugins {
+    id 'java'
+    alias(libs.plugins.spring.boot) apply false
+    alias(libs.plugins.dependency.management) apply false
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenLocal()
+
+    maven { url 'https://maven.aliyun.com/repository/public/'}
+    maven { url 'https://maven.aliyun.com/repository/spring/'}
+
+    mavenCentral()
+}
+
+subprojects {
+//    apply plugin: 'java'
+    apply plugin: 'java-library'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'maven-publish'
+
+//    ext.versions = rootProject.ext.versions
+//    version = libs.versions.sharp.get()
+
+    repositories {
+        mavenLocal()
+
+        maven { url 'https://maven.aliyun.com/repository/public/'}
+        maven { url 'https://maven.aliyun.com/repository/spring/'}
+
+        mavenCentral()
+    }
+
+    dependencies {
+        annotationProcessor 'org.projectlombok:lombok'
+        testCompileOnly 'org.projectlombok:lombok'
+        testAnnotationProcessor 'org.projectlombok:lombok'
+
+        compileOnly 'org.springframework.boot:spring-boot-starter-web'
+        compileOnly 'org.springframework.boot:spring-boot-starter-validation'
+        compileOnly 'org.springframework.boot:spring-boot-starter-security'
+        compileOnly 'org.springframework.boot:spring-boot-starter-aop'
+        compileOnly 'org.springframework.boot:spring-boot-starter-jdbc'
+        compileOnly 'jakarta.servlet:jakarta.servlet-api'
+
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    }
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
+                artifactId = project.name
+            }
+        }
+
+        repositories {
+            mavenLocal()
+        }
+    }
+}
