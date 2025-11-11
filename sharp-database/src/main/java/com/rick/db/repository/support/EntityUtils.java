@@ -1,9 +1,12 @@
 package com.rick.db.repository.support;
 
+import com.rick.db.repository.model.BaseEntityInfo;
 import com.rick.db.repository.model.BaseEntityInfoGetter;
 import com.rick.db.repository.model.EntityId;
 import lombok.experimental.UtilityClass;
 import org.springframework.beans.BeanUtils;
+
+import java.util.Objects;
 
 /**
  * @author Rick.Xu
@@ -12,25 +15,28 @@ import org.springframework.beans.BeanUtils;
 @UtilityClass
 public class EntityUtils {
 
-    public void resetAdditionalFields(EntityId entity) {
+    public void resetInfoFields(EntityId entity) {
         entity.setId(null);
 
         if (entity instanceof BaseEntityInfoGetter) {
-            ((BaseEntityInfoGetter)entity).getBaseEntityInfo().setCreateBy(null);
-            ((BaseEntityInfoGetter)entity).getBaseEntityInfo().setCreateTime(null);
-            ((BaseEntityInfoGetter)entity).getBaseEntityInfo().setUpdateBy(null);
-            ((BaseEntityInfoGetter)entity).getBaseEntityInfo().setUpdateTime(null);
-            ((BaseEntityInfoGetter)entity).getBaseEntityInfo().setDeleted(null);
+            BaseEntityInfo baseEntityInfo = ((BaseEntityInfoGetter) entity).getBaseEntityInfo();
+            if (Objects.nonNull(baseEntityInfo)) {
+                baseEntityInfo.setCreateBy(null);
+                baseEntityInfo.setCreateTime(null);
+                baseEntityInfo.setUpdateBy(null);
+                baseEntityInfo.setUpdateTime(null);
+                baseEntityInfo.setDeleted(null);
+            }
         }
     }
 
-    public void copyPropertiesAndResetAdditionalFields(Object source, EntityId target) {
-        copyPropertiesAndResetAdditionalFields(source, target, (String[])null);
+    public void copyPropertiesAndResetInfoFields(Object source, EntityId target) {
+        copyPropertiesAndResetInfoFields(source, target, (String[])null);
     }
 
-    public void copyPropertiesAndResetAdditionalFields(Object source, EntityId target, String... ignoreProperties) {
+    public void copyPropertiesAndResetInfoFields(Object source, EntityId target, String... ignoreProperties) {
         BeanUtils.copyProperties(source, target, ignoreProperties);
-        EntityUtils.resetAdditionalFields(target);
+        EntityUtils.resetInfoFields(target);
     }
 
     public boolean isEntityClass(Class<?> clazz) {
