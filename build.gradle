@@ -1,13 +1,7 @@
 plugins {
-    id 'java'
+    id "java"
     alias(libs.plugins.spring.boot) apply false
     alias(libs.plugins.dependency.management) apply false
-}
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
 }
 
 repositories {
@@ -20,13 +14,22 @@ repositories {
 }
 
 subprojects {
-//    apply plugin: 'java'
     apply plugin: 'java-library'
     apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'org.springframework.boot'
     apply plugin: 'maven-publish'
 
-//    ext.versions = rootProject.ext.versions
-//    version = libs.versions.sharp.get()
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(
+                    libs.versions.java.language.version.get().toInteger()
+            )
+        }
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
 
     repositories {
         mavenLocal()

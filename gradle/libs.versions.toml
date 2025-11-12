@@ -1,6 +1,7 @@
 [versions]
 spring-boot = "3.5.7"
 dependency-management = "1.1.7"
+java-language-version = "17"
 
 sharp = "0.0.1-SNAPSHOT"
 
