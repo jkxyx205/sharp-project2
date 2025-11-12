@@ -4,5 +4,5 @@ description = 'sharp-database'
 
 dependencies {
     api project(':sharp-common')
-    api 'org.springframework.boot:spring-boot-starter-validation'
+    compileOnly 'org.springframework.boot:spring-boot-starter-validation'
 }
