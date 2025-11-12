@@ -8,11 +8,4 @@ dependencies {
     api(libs.guava)
     api(libs.collections4)
     compileOnlyApi 'org.projectlombok:lombok'
-
-    compileOnly 'com.fasterxml.jackson.core:jackson-core'
-    compileOnly 'com.fasterxml.jackson.core:jackson-databind'
-    compileOnly 'com.fasterxml.jackson.core:jackson-annotations'
-    compileOnly 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-
-    compileOnly 'jakarta.annotation:jakarta.annotation-api'
 }
