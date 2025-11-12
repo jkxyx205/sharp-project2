@@ -4,5 +4,6 @@ description = 'sharp-database'
 
 dependencies {
     api project(':sharp-common')
-    compileOnly 'org.springframework.boot:spring-boot-starter-validation'
+
+    compileOnly 'org.postgresql:postgresql'
 }

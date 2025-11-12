@@ -1,6 +1,11 @@
 package com.rick.db.repository;
 
-import com.rick.common.util.*;
+import com.rick.common.util.ClassUtils;
+import com.rick.common.util.EnumUtils;
+import com.rick.common.util.IdGenerator;
+import com.rick.common.util.JsonUtils;
+import com.rick.db.config.Context;
+import com.rick.db.repository.model.DatabaseType;
 import com.rick.db.repository.support.SqlHelper;
 import com.rick.db.repository.support.TableMeta;
 import com.rick.db.repository.support.TableMetaResolver;
@@ -14,6 +19,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.postgresql.util.PGobject;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.beans.BeansException;
@@ -23,6 +29,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.validation.annotation.Validated;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -450,12 +458,26 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
         if (insert) {
             Map<String, Object> args = getArgsFromEntity(entity, false);
+
+            if (Context.getDialect().getType() == DatabaseType.PostgreSQL) {
+                for (Map.Entry<String, Object> arg : args.entrySet()) {
+                    Column annotation = tableMeta.getColumnNameMap().get(arg.getKey());
+                    if (Objects.nonNull(annotation)) {
+                        if ("json".equals(annotation.columnDefinition())) {
+                            postgresJsonHandler(arg.getKey(), "json", args);
+                        } else if ("jsonb".equals(annotation.columnDefinition())) {
+                            postgresJsonHandler(arg.getKey(), "jsonb", args);
+                        }
+                    }
+                }
+            }
+
             if (Objects.nonNull(tableMeta.getVersionField())) {
                 args.put(tableMeta.getFieldColumnNameMap().get(tableMeta.getVersionField()), 1);
             }
 
             if (Objects.nonNull(getIdValue(entity))) {
-                tableDAO.insert(tableMeta.getTableName(), tableMeta.getColumnNames(),  args);
+                tableDAO.insert(tableMeta.getTableName(), tableMeta.getColumnNames(), args);
             } else if (tableMeta.getIdMeta().getId().strategy() == Id.GenerationType.SEQUENCE) {
                 args.put(tableMeta.getIdMeta().getIdPropertyName(), IdGenerator.getSequenceId());
                 tableDAO.insert(tableMeta.getTableName(), tableMeta.getColumnNames(), args);
@@ -568,7 +590,25 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
     @Override
     public Map<String, Object> entityToMap(T entity) {
-        return getArgsFromEntity(entity, true);
+        Map<String, Object> map = getArgsFromEntity(entity, true);
+        Method[] methods = this.getTableMeta().getEntityClass().getMethods();
+        for (Method method : methods) {
+            String methodName = method.getName();
+            if (methodName.startsWith("get") && !methodName.equals("getClass")
+                    && method.getParameterCount() == 0) {
+
+                try {
+                    String fieldName = methodName.substring(3);
+                    fieldName = fieldName.substring(0, 1).toLowerCase() + fieldName.substring(1);
+                    Object value = method.invoke(entity);
+                    map.putIfAbsent(fieldName, value);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return map;
     }
 
     @Override
@@ -684,6 +724,23 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
         }
 
         return value;
+    }
+
+    private void postgresJsonHandler(String column, String type, Map<String, Object> args) {
+        Object value = args.get(column);
+
+        PGobject pGobject = new PGobject();
+        pGobject.setType(type);
+
+        if (Objects.nonNull(value)) {
+            try {
+                pGobject.setValue(value instanceof String ? (String) value : JsonUtils.toJson(value));
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        args.put(column, pGobject);
     }
 
 }
