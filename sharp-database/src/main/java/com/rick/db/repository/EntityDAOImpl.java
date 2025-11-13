@@ -35,6 +35,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.rick.db.repository.EntityDAOManager.targetSelect;
+import static com.rick.db.repository.EntityDAOManager.threadLocalEntity;
 import static com.rick.db.repository.support.Constants.COLUMN_NAME_SEPARATOR_REGEX;
 
 /**
@@ -54,8 +56,6 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
     @Getter
     private TableMeta<T> tableMeta;
-
-    private static final ThreadLocal<Collection<Object>> threadLocalEntity = ThreadLocal.withInitial(ArrayList::new);
 
     public EntityDAOImpl() {
         Class<?>[] actualTypeArguments = ClassUtils.getClassGenericsTypes(getClass());
@@ -186,8 +186,18 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
     @Override
     public <E> List<E> select(Class<E> clazz, String columns, String condition, Map<String, ?> paramMap) {
+        if (Objects.isNull(targetSelect.get())) {
+            targetSelect.set(tableMeta.getEntityClass());
+        }
+
         List<E> list = selectWithoutCascadeSelect(clazz, columns, condition, paramMap);
         cascadeSelect(clazz, (List<T>) list);
+
+        if (targetSelect.get() == tableMeta.getEntityClass()) {
+            targetSelect.remove();
+            threadLocalEntity.remove();
+        }
+
         return list;
     }
 
