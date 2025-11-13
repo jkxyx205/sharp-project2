@@ -259,7 +259,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                         setPropertyValue(t, reference.getField().getName(), ObjectUtils.defaultIfNull(map.get(getIdValue(t)), Collections.emptyList()));
                     }
                 } else if (Objects.nonNull(reference.getOneToMany()) && reference.getOneToMany().cascadeSelect()) {
-                    String mappedBy = Objects.nonNull(reference.getOneToMany()) ? reference.getOneToMany().mappedBy() : reference.getOneToMany().mappedBy();
+                    String mappedBy = reference.getOneToMany().mappedBy();
 
                     referenceList = referenceDAO.select(StringUtils.defaultIfBlank(reference.getOneToMany().joinColumnId(), tableMeta.getReferenceColumnId()) + " IN (:ids)", Map.of("ids", ids));
 
@@ -554,7 +554,15 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                             }
 
                             for (Object referenceEntity : list) {
-                                setPropertyValue(referenceEntity, reference.getOneToMany().mappedBy(), entity);
+                                Field mappedField = EntityDAOManager.getDAO(referenceEntity.getClass()).getTableMeta().getFieldByPropertyName(reference.getOneToMany().mappedBy());
+                                Object value;
+                                if (mappedField.getType() == entity.getClass()) {
+                                    value = entity;
+                                } else {
+                                    value = getIdValue(entity);
+                                }
+
+                                setPropertyValue(referenceEntity, reference.getOneToMany().mappedBy(), value);
                                 referenceDAO.insertOrUpdate(referenceEntity);
                             }
                         }
