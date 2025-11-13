@@ -21,6 +21,7 @@ import java.util.List;
 @SuperBuilder
 @Table(value = "t_role", comment = "角色")
 public class Role extends BaseEntity<Long> {
+
     String name;
 
     @ManyToMany(tableName = "t_user_role", joinColumnId = "role_id", inverseJoinColumnId = "user_id")

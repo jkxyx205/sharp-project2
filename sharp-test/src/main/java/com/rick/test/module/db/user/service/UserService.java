@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.Objects;
@@ -31,6 +32,7 @@ public class UserService {
 
     IdCardDAO idCardDAO;
 
+    @Transactional(rollbackFor = Exception.class)
     public User saveOrUpdate(@Valid User user) {
         log.info("saveOrUpdate。。。。。。info");
         log.debug("saveOrUpdate。。。。。。debug");

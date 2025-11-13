@@ -17,3 +17,8 @@ logging:
     org.springframework.jdbc.core: DEBUG
     org.springframework.jdbc.core.StatementCreatorUtils: TRACE
     com.rick.test: DEBUG
+
+springdoc:
+  api-docs:
+    path: /api-docs
+

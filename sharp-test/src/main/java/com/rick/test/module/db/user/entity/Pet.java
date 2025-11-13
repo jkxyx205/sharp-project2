@@ -40,7 +40,7 @@ public class Pet extends BaseEntity<Long> {
         "id": 1,
             "name": "Tom",
             // "user": {
-            //     "id": 2
+            //     "id": "2"
             // }
             // "userId": "3"
 //            "user_id": 4

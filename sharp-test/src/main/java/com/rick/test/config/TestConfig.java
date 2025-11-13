@@ -1,6 +1,5 @@
 package com.rick.test.config;
 
-import com.rick.common.http.exception.ApiExceptionHandler;
 import com.rick.common.http.web.SharpWebMvcConfigurer;
 import com.rick.db.repository.ExtendTableDAOImpl;
 import com.rick.db.repository.support.IdToEntityConverterFactory;
@@ -17,7 +16,7 @@ import java.util.List;
  * @date 2025/11/10 16:48
  */
 @Configuration
-@ComponentScan(basePackageClasses = {ApiExceptionHandler.class})
+@ComponentScan(basePackageClasses = {TestApiExceptionHandler.class})
 public class TestConfig extends SharpWebMvcConfigurer {
 
     @Bean

@@ -53,8 +53,10 @@ public class UserTest {
     @Test
     @Order(1)
     public void testUserInsert() {
-        List<Role> roleList = List.of(Role.builder().name("SYSTEM").build(), Role.builder().name("ADMIN").build());
-        roleDAO.insertOrUpdate(roleList);
+        List<Role> roleList = List.of(Role.builder().name("SYSTEM").id(1020361648726110208L).build(), Role.builder().name("ADMIN").id(1020367431043936256L).build());
+        for (Role role : roleList) {
+            roleDAO.insert(role);
+        }
 
         User user = User.builder()
                 .name("Tom")
@@ -117,7 +119,6 @@ public class UserTest {
 
         assertEquals(2, user.getRoleList().size());
         assertEquals(true, user.getRoleList().stream().anyMatch(role -> role.getName().equals("ADMIN")), "获取角色信息失败");
-
     }
 
     @Test

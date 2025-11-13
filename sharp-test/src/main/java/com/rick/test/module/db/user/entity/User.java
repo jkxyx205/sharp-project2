@@ -4,12 +4,10 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.rick.common.http.json.deserializer.EntityWithLongIdPropertyDeserializer;
 import com.rick.common.http.web.param.ParamName;
-import com.rick.db.repository.Column;
-import com.rick.db.repository.ManyToMany;
-import com.rick.db.repository.OneToMany;
-import com.rick.db.repository.Table;
+import com.rick.db.repository.*;
 import com.rick.db.repository.model.BaseEntity;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
@@ -40,6 +38,7 @@ public class User extends BaseEntity<Long> {
      * 在 service 中处理
      */
     @OneToMany(oneToOne = true, joinColumnId = "id", mappedBy = "id")
+    @NotNull
     IdCard idCard;
 
     /**
@@ -56,12 +55,12 @@ public class User extends BaseEntity<Long> {
      * {
      *     "id": 1,
      *     "name": "Rick",
-     *     // "petIds": [1, 2]
-     *     // "pet_ids": [3, 4]
-     *     // "petList": [5, 6]
+     *     // "petIds": ["1", 2]
+     *     // "pet_ids": ["3", 4]
+     *     // "petList": ["5", 6]
      *     "petList": [
      *         {
-     *             "id": 7,
+     *             "id": "7",
      *             "name": "jerry"
      *         }
      *     ]
@@ -72,5 +71,10 @@ public class User extends BaseEntity<Long> {
     List<Pet> petList;
 
     @ManyToMany(tableName = "t_user_role", joinColumnId = "user_id", inverseJoinColumnId = "role_id")
+    @JsonAlias({"roleIds", "role_ids", "roleList"}) // 只读（反序列化）
+    @JsonDeserialize(using = EntityWithLongIdPropertyDeserializer.class)
     List<Role> roleList;
+
+    @Transient
+    Integer score;
 }
