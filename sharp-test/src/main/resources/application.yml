@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: sharp-test
+  datasource:
+    url: jdbc:postgresql://localhost:5432/erp
+    username: postgres
+    password: jkxyx@05
+
+sharp:
+  database:
+    type: PostgreSQL
+    entity-base-package: com.rick.test.**.entity
+
+logging:
+  level:
+    root: WARN
+    org.springframework.jdbc.core: DEBUG
+    org.springframework.jdbc.core.StatementCreatorUtils: TRACE
+    com.rick.test: DEBUG

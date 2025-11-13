@@ -1,0 +1,46 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.7'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.rick'
+version = '0.0.1-SNAPSHOT'
+description = 'sharp-test'
+
+dependencies {
+	implementation project(":sharp-database")
+	runtimeOnly 'org.postgresql:postgresql'
+
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+
+}
+
+configurations {
+	implementation {
+		// 移除父项目传下来的依赖
+		setCanBeResolved(true)
+		exclude group: 'org.springframework.boot', module: 'spring-boot-starter-security'
+	}
+}
+
+// 禁用打包与发布任务
+tasks.withType(Jar).configureEach {
+	enabled = false
+}
+
+tasks.withType(org.gradle.api.publish.PublishingExtension).configureEach {
+	enabled = false
+}
+
+//// 禁用 Spring Boot 的打包任务（如果有）
+//tasks.matching { it.name == "bootJar" || it.name == "jar" || it.name == "publish" }.configureEach {
+//	enabled = false
+//}
+tasks.matching { it.name.startsWith("generate") || it.name.startsWith("publish") }.configureEach {
+	enabled = false
+}
+
