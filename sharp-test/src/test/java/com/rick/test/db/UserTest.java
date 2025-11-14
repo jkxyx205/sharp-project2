@@ -9,6 +9,7 @@ import com.rick.test.module.db.user.entity.IdCard;
 import com.rick.test.module.db.user.entity.Pet;
 import com.rick.test.module.db.user.entity.Role;
 import com.rick.test.module.db.user.entity.User;
+import com.rick.test.module.db.user.service.PetService;
 import com.rick.test.module.db.user.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
@@ -45,10 +46,13 @@ public class UserTest {
     @Autowired
     EntityDAOSupport entityDAOSupport;
 
-    private Long userId;
-
     @Autowired
     private RoleDAO roleDAO;
+
+    @Autowired
+    PetService petService;
+
+    private Long userId;
 
     @Test
     @Order(1)
@@ -69,6 +73,23 @@ public class UserTest {
         userService.saveOrUpdate(user);
         userId = user.getId();
         log.info("user id: {}", userId);
+    }
+
+    @Test
+    @Order(2)
+    public void testPetInsert() {
+        List<Role> roleList = roleDAO.selectAll();
+        User user = User.builder()
+                .name("Tom-2")
+                .nameList(List.of("张三-2", "李四-2"))
+                .idCard(IdCard.builder().code("321283197719123453").build())
+                .roleList(roleList)
+                .build();
+
+        Pet pig = Pet.builder().name("pig-2").user(user).build();
+
+
+        petService.saveOrUpdate(pig);
     }
 
     @Test

@@ -51,7 +51,7 @@ public class Pet extends BaseEntity<Long> {
     @JsonDeserialize(using = EntityWithLongIdPropertyDeserializer.class)
 //    @JsonProperty(value = "userId") //    读 + 写（序列化 + 反序列化）, 通过 getUserId() 来完成
 //    @JsonSerialize(using = EntityWithLongIdPropertySerializer.class)
-    @ManyToOne
+    @ManyToOne(cascadeSave = true)
     User user;
 
     @JsonProperty("userId")

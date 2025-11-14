@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -57,5 +58,13 @@ public class UserService {
 
     public void add(@NotBlank String orderNo) {
         log.info(orderNo);
+    }
+
+    public Integer deleteBytId(Long id) {
+        return userDAO.deleteById(id);
+    }
+
+    public List<User> findAll() {
+        return userDAO.selectAll();
     }
 }
