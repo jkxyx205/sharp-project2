@@ -57,6 +57,9 @@ public class UserTest {
     @Test
     @Order(1)
     public void testUserInsert() {
+// 如果设置级联更新 Role，需要 Role 信息， 否则只需要 role#id
+//        List<Role> roleList = List.of(Role.builder().name("SYSTEM-1").build(), Role.builder().name("ADMIN-1").build());
+
         List<Role> roleList = List.of(Role.builder().name("SYSTEM").id(1020361648726110208L).build(), Role.builder().name("ADMIN").id(1020367431043936256L).build());
         for (Role role : roleList) {
             roleDAO.insert(role);

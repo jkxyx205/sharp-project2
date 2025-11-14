@@ -24,6 +24,6 @@ public class Role extends BaseEntity<Long> {
 
     String name;
 
-    @ManyToMany(tableName = "t_user_role", joinColumnId = "role_id", inverseJoinColumnId = "user_id")
+    @ManyToMany(tableName = "t_user_role", joinColumnId = "role_id", inverseJoinColumnId = "user_id"/*, cascadeSave = true, mappedBy = "roleList"*/)
     List<User> userList;
 }

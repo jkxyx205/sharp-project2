@@ -70,7 +70,7 @@ public class User extends BaseEntity<Long> {
     @JsonDeserialize(using = EntityWithLongIdPropertyDeserializer.class)
     List<Pet> petList;
 
-    @ManyToMany(tableName = "t_user_role", joinColumnId = "user_id", inverseJoinColumnId = "role_id")
+    @ManyToMany(tableName = "t_user_role", joinColumnId = "user_id", inverseJoinColumnId = "role_id"/*, cascadeSave = true, mappedBy = "userList"*/)
     @JsonAlias({"roleIds", "role_ids", "roleList"}) // 只读（反序列化）
     @JsonDeserialize(using = EntityWithLongIdPropertyDeserializer.class)
     List<Role> roleList;
