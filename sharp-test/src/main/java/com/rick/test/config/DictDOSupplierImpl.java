@@ -1,0 +1,63 @@
+package com.rick.test.config;
+
+import com.rick.meta.dict.entity.Dict;
+import com.rick.meta.dict.service.DictDOSupplier;
+import com.rick.test.module.db.complex.entity.CodeDescription;
+import com.rick.test.module.db.complex.service.CodeDescriptionService;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.stereotype.Component;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 注册 枚举 和 CodeDescription
+ * @author Rick.Xu
+ * @date 2024/8/18 02:40
+ */
+@Component
+@RequiredArgsConstructor
+public class DictDOSupplierImpl implements DictDOSupplier {
+
+    private final CodeDescriptionService codeDescriptionService;
+
+    @Override
+    public List<Dict> get() {
+        List<Dict> dictList = new ArrayList<>();
+        // 1. 注册枚举值
+        try {
+
+            registerEnum(dictList,
+                    CodeDescription.CategoryEnum.class
+                    );
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        // CodeDescription注册
+        for (CodeDescription codeDescription : codeDescriptionService.findAll()) {
+            dictList.add(new Dict(codeDescription.getCategory().name(), codeDescription.getCode(), codeDescription.getDescription(), codeDescription.getSort()));
+        }
+        return dictList;
+    }
+
+    private void registerEnum(List<Dict> dictList, Class<? extends Enum> ... enums) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        // 将枚举类型注册到字典
+        if (ArrayUtils.isNotEmpty(enums)) {
+            for (Class<? extends Enum> clazz : enums) {
+                for (Enum value : clazz.getEnumConstants()) {
+                    Method getLabelMethod = clazz.getMethod("getLabel");
+                    String label = (String) getLabelMethod.invoke(value);
+
+                    Method getCodeMethod = clazz.getMethod("getCode");
+                    Object code = getCodeMethod.invoke(value);
+                    dictList.add(new Dict(clazz.getSimpleName(), String.valueOf(code), label, value.ordinal()));
+                }
+            }
+        }
+
+    }
+}

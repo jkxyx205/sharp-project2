@@ -14,6 +14,10 @@ dependencies {
 	implementation project(":sharp-database")
 	runtimeOnly 'org.postgresql:postgresql'
 
+	implementation("com.rick.meta:sharp-meta:3.0-SNAPSHOT") {
+		exclude group: 'com.rick.db', module: 'sharp-database2'
+	}
+
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'

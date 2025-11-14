@@ -1,6 +1,8 @@
 package com.rick.test;
 
 import com.rick.db.plugin.generator.TableGenerator;
+import com.rick.test.module.db.complex.entity.CodeDescription;
+import com.rick.test.module.db.complex.entity.ComplexModel;
 import com.rick.test.module.db.user.entity.IdCard;
 import com.rick.test.module.db.user.entity.Pet;
 import com.rick.test.module.db.user.entity.Role;
@@ -20,11 +22,17 @@ public class TableGeneratorTest {
     private TableGenerator tableGenerator;
 
     @Test
-    public void testGeneratorTable() {
+    public void testGeneratorUserTable() {
         tableGenerator.createTable(User.class);
         tableGenerator.createTable(IdCard.class);
 
         tableGenerator.createTable(Pet.class);
         tableGenerator.createTable(Role.class);
+    }
+
+    @Test
+    public void testGeneratorComplexTable() {
+        tableGenerator.createTable(CodeDescription.class);
+        tableGenerator.createTable(ComplexModel.class);
     }
 }

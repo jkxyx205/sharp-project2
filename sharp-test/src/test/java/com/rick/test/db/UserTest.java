@@ -155,7 +155,7 @@ public class UserTest {
         assertEquals(true, optional.isEmpty());
     }
 
-//    @AfterAll
+    @AfterAll
     public void afterAll() {
         jdbcTemplate.execute("""
             truncate table t_user;
@@ -163,6 +163,6 @@ public class UserTest {
             truncate table t_pet;
             truncate table t_role;
             truncate table t_user_role;
-""");
+        """);
     }
 }
