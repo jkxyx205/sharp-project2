@@ -3,6 +3,7 @@ package com.rick.db.repository.model;
 import com.rick.db.repository.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
@@ -13,6 +14,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@EqualsAndHashCode(of = {"code"})
 public class IdCodeValue {
 
     Long id;
@@ -30,4 +32,5 @@ public class IdCodeValue {
         this.code = code;
         this.description = description;
     }
+
 }
