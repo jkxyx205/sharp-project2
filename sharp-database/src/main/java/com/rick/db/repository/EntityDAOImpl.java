@@ -6,6 +6,7 @@ import com.rick.common.util.IdGenerator;
 import com.rick.common.util.JsonUtils;
 import com.rick.db.config.Context;
 import com.rick.db.repository.model.DatabaseType;
+import com.rick.db.repository.support.SQLParamCleaner;
 import com.rick.db.repository.support.SqlHelper;
 import com.rick.db.repository.support.TableMeta;
 import com.rick.db.repository.support.TableMetaResolver;
@@ -108,6 +109,13 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
+    public List<T> select(Map<String, ?> paramMap) {
+        Map<String, Object> formatMap = new HashMap<>();
+        String sql = SQLParamCleaner.formatSql(tableMeta.getSelectConditionSQL(), paramMap, formatMap);
+        return select(tableMeta.getEntityClass(), sql, formatMap);
+    }
+
+    @Override
     public List<T> select(String condition, Map<String, ?> paramMap) {
         return select(tableMeta.getSelectColumn(), condition, paramMap);
     }
@@ -189,8 +197,12 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
     @Override
     public <E> List<E> select(Class<E> clazz, String columns, String condition, Map<String, ?> paramMap) {
+        return select(clazz, tableMeta.getSelectSQL(columns) + SqlHelper.buildWhere(condition), paramMap);
+    }
+
+    private  <E> List<E> select(Class<E> clazz, String sql, Map<String, ?> paramMap) {
         return (List<E>) watchSelect(() -> {
-            List<E> list = selectWithoutCascadeSelect(clazz, columns, condition, paramMap);
+            List<E> list = selectWithoutCascadeSelect(clazz, sql, paramMap);
             cascadeSelect(clazz, (List<T>) list);
             return (T) list;
         });
@@ -198,7 +210,11 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
     @Override
     public <E> List<E> selectWithoutCascadeSelect(Class<E> clazz, String columns, String condition, Map<String, ?> paramMap) {
-        List<E> list = tableDAO.select(clazz, tableMeta.getSelectSQL(columns) + SqlHelper.buildWhere(condition), paramMap);
+        return selectWithoutCascadeSelect(clazz,tableMeta.getSelectSQL(columns) + SqlHelper.buildWhere(condition), paramMap);
+    }
+
+    private  <E> List<E> selectWithoutCascadeSelect(Class<E> clazz, String sql, Map<String, ?> paramMap) {
+        List<E> list = tableDAO.select(clazz, sql, paramMap);
         return list;
     }
 
