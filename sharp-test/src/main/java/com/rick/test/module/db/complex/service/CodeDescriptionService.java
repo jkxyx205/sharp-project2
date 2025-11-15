@@ -1,5 +1,6 @@
 package com.rick.test.module.db.complex.service;
 
+import com.rick.db.util.OperatorUtils;
 import com.rick.test.module.db.complex.dao.CodeDescriptionDAO;
 import com.rick.test.module.db.complex.entity.CodeDescription;
 import jakarta.validation.constraints.NotNull;
@@ -13,6 +14,7 @@ import org.springframework.validation.annotation.Validated;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author Rick.Xu
@@ -32,8 +34,12 @@ public class CodeDescriptionService {
                 codeDescription.setCategory(category);
             }
         }
-       // TODO
+        // TODO
         codeDescriptionDAO.insertOrUpdate(list, "category", category.getCode());
+    }
+
+    public Optional<CodeDescription> findOne(CodeDescription.CategoryEnum category, String code) {
+        return OperatorUtils.expectedAsOptional(codeDescriptionDAO.select("category = :category AND code = :code", Map.of("category", category.getCode(), "code", code)));
     }
 
     public List<CodeDescription> findAll(CodeDescription.CategoryEnum category) {
