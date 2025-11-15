@@ -18,6 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -147,6 +148,13 @@ public class UserTest {
 
     @Test
     @Order(4)
+    public void testSelect2() {
+        List<User> userList = userDAO.select(Map.of("id", userId));
+        assertEquals(1, userList.size());
+    }
+
+    @Test
+    @Order(5)
     public void testUserDelete() {
         int count = userDAO.deleteById(userId);
         assertEquals(1, count, "删除不成功");
