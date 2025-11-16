@@ -3,19 +3,18 @@ package com.rick.test.db;
 import com.rick.db.repository.EntityDAO;
 import com.rick.db.repository.support.EntityDAOSupport;
 import com.rick.db.repository.support.EntityUtils;
-import com.rick.test.BaseTest;
 import com.rick.test.module.db.user.dao.RoleDAO;
+import com.rick.test.module.db.user.dao.UserDAO;
 import com.rick.test.module.db.user.entity.IdCard;
 import com.rick.test.module.db.user.entity.Pet;
 import com.rick.test.module.db.user.entity.Role;
 import com.rick.test.module.db.user.entity.User;
 import com.rick.test.module.db.user.service.PetService;
-import com.rick.test.module.db.user.service.UserService;
+import com.rick.test.module.db.user.service.UserService2;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
@@ -30,8 +29,17 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * @author Rick.Xu
  * @date 2025/11/10 18:50
  */
+@SpringBootTest
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Slf4j
-public class UserTest extends BaseTest<UserService, User, Long> {
+public class UserTest2 {
+
+    @Autowired
+    private UserService2 userService;
+
+    @Autowired
+    private UserDAO userDAO;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -47,17 +55,13 @@ public class UserTest extends BaseTest<UserService, User, Long> {
 
     private Long userId;
 
-    public UserTest(@Autowired UserService baseService) {
-        super(baseService);
-    }
-
     @Test
     @Order(1)
     public void testUserInsert() {
 // 如果设置级联更新 Role，需要 Role 信息， 否则只需要 role#id
 //        List<Role> roleList = List.of(Role.builder().name("SYSTEM-1").build(), Role.builder().name("ADMIN-1").build());
 
-        List<Role> roleList = List.of(Role.builder().name("SYSTEM").id(1020361648726110208L).build(), Role.builder().name("ADMIN").id(102036743143936256L).build());
+        List<Role> roleList = List.of(Role.builder().name("SYSTEM").id(1020361648726110208L).build(), Role.builder().name("ADMIN").id(1020367431043936256L).build());
         for (Role role : roleList) {
             roleDAO.insert(role);
         }
@@ -70,7 +74,7 @@ public class UserTest extends BaseTest<UserService, User, Long> {
                 .roleList(roleList)
                 .build();
 
-        baseService.insertOrUpdate(user);
+        userService.saveOrUpdate(user);
         userId = user.getId();
         log.info("user id: {}", userId);
     }
@@ -87,13 +91,15 @@ public class UserTest extends BaseTest<UserService, User, Long> {
                 .build();
 
         Pet pig = Pet.builder().name("pig-2").user(user).build();
+
+
         petService.saveOrUpdate(pig);
     }
 
     @Test
     @Order(2)
     public void testUserUpdate() {
-        Optional<User> optional = baseService.selectById(userId);
+        Optional<User> optional = userService.selectById(userId);
         List<Pet> petList = optional.get().getPetList();
         for (Pet pet : petList) {
             pet.setName(pet.getName() + "-1");
@@ -108,13 +114,13 @@ public class UserTest extends BaseTest<UserService, User, Long> {
                 .roleList(optional.get().getRoleList())
                 .build();
 
-        baseService.insertOrUpdate(user);
+        userService.saveOrUpdate(user);
     }
 
     @Test
     @Order(3)
     public void testSelect() {
-        Optional<User> optional = baseService.selectById(userId);
+        Optional<User> optional = userService.selectById(userId);
         User user = optional.get();
 //        System.out.println(JsonUtils.toJson(user));
 
@@ -143,50 +149,28 @@ public class UserTest extends BaseTest<UserService, User, Long> {
     @Test
     @Order(4)
     public void testSelect2() {
-        List<User> userList = entityDAO.select(Map.of("id", userId));
+        List<User> userList = userDAO.select(Map.of("id", userId));
         assertEquals(1, userList.size());
     }
 
     @Test
     @Order(5)
     public void testUserDelete() {
-        int count = entityDAO.deleteById(userId);
+        int count = userDAO.deleteById(userId);
         assertEquals(1, count, "删除不成功");
 
-        Optional<User> optional = baseService.selectById(userId);
+        Optional<User> optional = userService.selectById(userId);
         assertEquals(true, optional.isEmpty());
-    }
-
-    @Test
-    @Order(100)
-    public void testInsertOrUpdate() {
-// 如果设置级联更新 Role，需要 Role 信息， 否则只需要 role#id
-//        List<Role> roleList = List.of(Role.builder().name("SYSTEM-1").build(), Role.builder().name("ADMIN-1").build());
-
-        List<Role> roleList = List.of(Role.builder().name("SYSTEM-2").id(1020361648726110201L).build(), Role.builder().name("ADMIN-2").id(102036743143936251L).build());
-        for (Role role : roleList) {
-            roleDAO.insert(role);
-        }
-
-        User user = User.builder()
-                .name("Tom")
-                .nameList(List.of("张三", "李四"))
-                .idCard(IdCard.builder().code("321283197719123452q").build())
-                .petList(List.of(Pet.builder().name("Tom").build(), Pet.builder().name("Jerry").build()))
-                .roleList(roleList)
-                .build();
-
-        super.testInsertOrUpdate(user);
     }
 
     @AfterAll
     public void afterAll() {
         jdbcTemplate.execute("""
-                    truncate table t_user;
-                    truncate table t_id_card;
-                    truncate table t_pet;
-                    truncate table t_role;
-                    truncate table t_user_role;
-                """);
+            truncate table t_user;
+            truncate table t_id_card;
+            truncate table t_pet;
+            truncate table t_role;
+            truncate table t_user_role;
+        """);
     }
 }

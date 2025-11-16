@@ -1,11 +1,13 @@
 package com.rick.test.module.db.user.service;
 
-import com.rick.db.plugin.BaseServiceImpl;
 import com.rick.test.module.db.user.dao.IdCardDAO;
 import com.rick.test.module.db.user.dao.UserDAO;
 import com.rick.test.module.db.user.entity.User;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,24 +24,22 @@ import java.util.Optional;
  */
 @Service
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
+@RequiredArgsConstructor
 @Validated
 @Slf4j
-public class UserService extends BaseServiceImpl<UserDAO, User, Long> {
+public class UserService2 {
+
+    UserDAO userDAO;
 
     IdCardDAO idCardDAO;
 
-    public UserService(UserDAO baseDAO, IdCardDAO idCardDAO) {
-        super(baseDAO);
-        this.idCardDAO = idCardDAO;
-    }
-
     @Transactional(rollbackFor = Exception.class)
-    public User insertOrUpdate(User user) {
+    public User saveOrUpdate(@Valid User user) {
         log.info("saveOrUpdate。。。。。。info");
         log.debug("saveOrUpdate。。。。。。debug");
 
         boolean insert = Objects.isNull(user.getId());
-        baseDAO.insertOrUpdate(user);
+        userDAO.insertOrUpdate(user);
 
         if (insert) {
             // 一对一主键映射，需要在 service 中处理 insert 方法，sharp-database 会处理为更新
@@ -48,14 +48,12 @@ public class UserService extends BaseServiceImpl<UserDAO, User, Long> {
         return user;
     }
 
-    /**
-     * 父类没有加 @NotNull，子类加 @NotNull
-     * 抛出错误 A method overriding another method must not redefine the parameter constraint configuration
-     * @param id
-     * @return
-     */
-    public Optional<User> selectById(Long id) {
-        return baseDAO.selectById(id);
+    public Optional<User> selectById(@NotNull Long id) {
+        return userDAO.selectById(id);
+    }
+
+    public Optional<User> selectById2(Long id) {
+        return userDAO.selectById(id);
     }
 
     public void add(@NotBlank String orderNo) {
@@ -63,10 +61,10 @@ public class UserService extends BaseServiceImpl<UserDAO, User, Long> {
     }
 
     public Integer deleteBytId(Long id) {
-        return baseDAO.deleteById(id);
+        return userDAO.deleteById(id);
     }
 
     public List<User> findAll() {
-        return baseDAO.selectAll();
+        return userDAO.selectAll();
     }
 }

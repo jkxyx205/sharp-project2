@@ -6,6 +6,8 @@ import com.rick.meta.dict.service.DictUtils;
 import com.rick.test.module.db.complex.entity.CodeDescription;
 import com.rick.test.module.db.complex.entity.ComplexModel;
 import com.rick.test.module.db.complex.model.EmbeddedValue;
+import com.rick.test.util.TestHelper;
+import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,6 +18,7 @@ import java.lang.reflect.Modifier;
 import java.time.LocalDate;
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
@@ -33,6 +36,10 @@ public class ComplexModelTest {
     @Autowired
     private EntityDAO<ComplexModel, Long> complexModelDAO;
 
+    private Long id;
+
+    private Object entity;
+
     @Test
     @Order(1)
     public void testComplexModel() {
@@ -46,7 +53,7 @@ public class ComplexModelTest {
         schoolExperienceList.add(Arrays.asList("2023-11-11", "苏州大学"));
         schoolExperienceList.add(Arrays.asList("2019-11-11", "苏州中学"));
 
-        complexModelDAO.insert(ComplexModel.builder()
+        ComplexModel complexModel = complexModelDAO.insert(ComplexModel.builder()
                 .id(856759492044419072L)
                 .name("Rick2")
                 .age(34)
@@ -63,14 +70,21 @@ public class ComplexModelTest {
                 .embeddedValue(new EmbeddedValue(new DictValue("HIBE"), "texg"))
                 .category(CodeDescription.CategoryEnum.MATERIAL)
                 .workStatus(ComplexModel.WorkStatusEnum.FINISHED).build());
+
+        id = complexModel.getId();
+        entity = complexModel;
     }
 
     @Test
     @Order(2)
     public void testSelectComplexModel() {
-        Optional<ComplexModel> optional = complexModelDAO.selectById(856759492044419072L);
+        Optional<ComplexModel> optional = complexModelDAO.selectById(id);
         ComplexModel complexModel = optional.get();
         System.out.println(complexModel);
+
+        TestHelper.sortList(entity);
+        TestHelper.sortList(complexModel);
+        assertEquals(true, EqualsBuilder.reflectionEquals(complexModel, entity, "baseEntityInfo"));
         // 获取label
 //        complexModel.setEmbeddedValue(new EmbeddedValue(new DictValue("HIBE"), "texg"));
         DictUtils.fillDictLabel(complexModel);

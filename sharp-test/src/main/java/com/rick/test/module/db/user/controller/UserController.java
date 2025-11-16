@@ -63,7 +63,7 @@ public class UserController {
             )
     )
     public User saveUser(@Valid @RequestBody User user) {
-        userService.saveOrUpdate(user);
+        userService.insertOrUpdate(user);
         for (Role role : user.getRoleList()) {
             role.setUserList(null);
         }
