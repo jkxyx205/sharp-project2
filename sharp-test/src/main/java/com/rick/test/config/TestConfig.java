@@ -2,7 +2,9 @@ package com.rick.test.config;
 
 import com.rick.common.http.web.SharpWebMvcConfigurer;
 import com.rick.db.repository.ExtendTableDAOImpl;
+import com.rick.db.repository.support.ExtendInsertUpdateCallback;
 import com.rick.db.repository.support.IdToEntityConverterFactory;
+import com.rick.db.repository.support.InsertUpdateCallback;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +24,11 @@ public class TestConfig extends SharpWebMvcConfigurer {
     @Bean
     public ExtendTableDAOImpl tableDAO(NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
         return new ExtendTableDAOImpl(namedParameterJdbcTemplate);
+    }
+
+    @Bean
+    public InsertUpdateCallback insertCallback() {
+        return new ExtendInsertUpdateCallback();
     }
 
     @Override

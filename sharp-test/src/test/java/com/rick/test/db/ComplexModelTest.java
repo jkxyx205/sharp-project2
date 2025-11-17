@@ -84,7 +84,7 @@ public class ComplexModelTest {
 
         TestHelper.sortList(entity);
         TestHelper.sortList(complexModel);
-        assertEquals(true, EqualsBuilder.reflectionEquals(complexModel, entity, "baseEntityInfo"));
+        assertEquals(true, EqualsBuilder.reflectionEquals(complexModel, entity));
         // 获取label
 //        complexModel.setEmbeddedValue(new EmbeddedValue(new DictValue("HIBE"), "texg"));
         DictUtils.fillDictLabel(complexModel);

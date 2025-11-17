@@ -13,6 +13,7 @@ import com.rick.test.module.db.user.select.UserSelect;
 import com.rick.test.module.db.user.service.PetService;
 import com.rick.test.module.db.user.service.UserService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Order;
@@ -156,10 +157,16 @@ public class UserTest extends BaseTest<UserService, User, Long> {
         List<User> userList = entityDAO.select(Map.of("id", userId));
         User user = userList.get(0);
 
-        user.getIdCard().toString();
+        User user2 = new User();
+        user2.setId(userId);
+        entityDAO.cascadeSelect(List.of(user2));
+
+        List<User> list = entityDAO.select(user2);
+        assertEquals(true, EqualsBuilder.reflectionEquals(list.get(0), user));
 
         UserSelect select = new UserSelect();
-        BeanUtils.copyProperties(user, select);
+
+        BeanUtils.copyProperties(SerializationUtils.clone(user), select);
 
         select.getIdCard().setCode(null);
         for (Role role : select.getRoleList()) {
@@ -173,6 +180,15 @@ public class UserTest extends BaseTest<UserService, User, Long> {
         }
 
         entityDAOSupport.select(select);
+
+        user2.setRoleList(select.getRoleList());
+        user2.setNameList(user.getNameList());
+        user2.setIdCard(select.getIdCard());
+        user2.setPetList(select.getPetList());
+        user2.setName(user.getName());
+        user2.setBaseEntityInfo(user.getBaseEntityInfo());
+
+        assertEquals(true, EqualsBuilder.reflectionEquals(user2, user));
 
         List<UserSelect> userSelectList1 = entityDAOSupport.select(UserSelect.class, "select id from t_user where id = :id", Map.of("id", userId));
         List<UserSelect> userSelectList2 = entityDAOSupport.select(UserSelect.class, "select id from t_user where id = ?", userId);
