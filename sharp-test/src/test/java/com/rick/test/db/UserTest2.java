@@ -1,7 +1,7 @@
 package com.rick.test.db;
 
 import com.rick.db.repository.EntityDAO;
-import com.rick.db.repository.support.EntityDAOSupport;
+import com.rick.db.repository.EntityDAOSupport;
 import com.rick.db.repository.support.EntityUtils;
 import com.rick.test.module.db.user.dao.RoleDAO;
 import com.rick.test.module.db.user.dao.UserDAO;

@@ -9,7 +9,7 @@ spring:
 sharp:
   database:
     type: PostgreSQL
-    entity-base-package: com.rick.test.**.entity
+    entity-base-package: com.rick.test.**.entity, com.rick.test.**.select
 
 logging:
   level:

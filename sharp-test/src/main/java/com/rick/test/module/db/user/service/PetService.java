@@ -1,7 +1,7 @@
 package com.rick.test.module.db.user.service;
 
 import com.rick.db.repository.EntityDAO;
-import com.rick.db.repository.support.EntityDAOSupport;
+import com.rick.db.repository.EntityDAOSupport;
 import com.rick.test.module.db.user.dao.IdCardDAO;
 import com.rick.test.module.db.user.entity.Pet;
 import lombok.AccessLevel;

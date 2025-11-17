@@ -28,4 +28,13 @@ public class IdCard extends BaseCodeEntity<Long> {
     )
     private Long id;
 
+
+    /**
+     * id 覆盖了，需要重写 toString
+     * @return
+     */
+    @Override
+    public String toString() {
+        return this.id == null ? "" : String.valueOf(id);
+    }
 }

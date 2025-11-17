@@ -1,7 +1,7 @@
 package com.rick.test.db;
 
 import com.rick.db.repository.EntityDAO;
-import com.rick.db.repository.support.EntityDAOSupport;
+import com.rick.db.repository.EntityDAOSupport;
 import com.rick.db.repository.support.EntityUtils;
 import com.rick.test.BaseTest;
 import com.rick.test.module.db.user.dao.RoleDAO;
@@ -9,12 +9,15 @@ import com.rick.test.module.db.user.entity.IdCard;
 import com.rick.test.module.db.user.entity.Pet;
 import com.rick.test.module.db.user.entity.Role;
 import com.rick.test.module.db.user.entity.User;
+import com.rick.test.module.db.user.select.UserSelect;
 import com.rick.test.module.db.user.service.PetService;
 import com.rick.test.module.db.user.service.UserService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -149,6 +152,35 @@ public class UserTest extends BaseTest<UserService, User, Long> {
 
     @Test
     @Order(5)
+    public void testSelect3() {
+        List<User> userList = entityDAO.select(Map.of("id", userId));
+        User user = userList.get(0);
+
+        user.getIdCard().toString();
+
+        UserSelect select = new UserSelect();
+        BeanUtils.copyProperties(user, select);
+
+        select.getIdCard().setCode(null);
+        for (Role role : select.getRoleList()) {
+            role.setUserList(null);
+            role.setName(null);
+        }
+
+        for (Pet pet : select.getPetList()) {
+            pet.setUser(null);
+            pet.setName(null);
+        }
+
+        entityDAOSupport.select(select);
+
+        List<UserSelect> userSelectList1 = entityDAOSupport.select(UserSelect.class, "select id from t_user where id = :id", Map.of("id", userId));
+        List<UserSelect> userSelectList2 = entityDAOSupport.select(UserSelect.class, "select id from t_user where id = ?", userId);
+        assertEquals(true, EqualsBuilder.reflectionEquals(userSelectList1.get(0), userSelectList2.get(0)));
+    }
+
+    @Test
+    @Order(6)
     public void testUserDelete() {
         int count = entityDAO.deleteById(userId);
         assertEquals(1, count, "删除不成功");
