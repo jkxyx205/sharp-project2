@@ -6,10 +6,7 @@ import com.rick.common.util.IdGenerator;
 import com.rick.common.util.JsonUtils;
 import com.rick.db.config.Context;
 import com.rick.db.repository.model.DatabaseType;
-import com.rick.db.repository.support.SQLParamCleaner;
-import com.rick.db.repository.support.SqlHelper;
-import com.rick.db.repository.support.TableMeta;
-import com.rick.db.repository.support.TableMetaResolver;
+import com.rick.db.repository.support.*;
 import com.rick.db.util.OperatorUtils;
 import jakarta.annotation.Resource;
 import lombok.AccessLevel;
@@ -24,6 +21,7 @@ import org.postgresql.util.PGobject;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -59,19 +57,23 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     @Getter
     private TableMeta<T> tableMeta;
 
+    @Autowired(required = false)
+    private InsertUpdateCallback insertUpdateCallback;
+
     public EntityDAOImpl() {
         Class<?>[] actualTypeArguments = ClassUtils.getClassGenericsTypes(getClass());
         this.tableMeta = TableMetaResolver.resolve(actualTypeArguments[0]);
         init();
     }
 
-    public EntityDAOImpl(NamedParameterJdbcTemplate jdbcTemplate, Class<T> entityClass) {
-        this(new TableDAOImpl(jdbcTemplate), entityClass);
+    public EntityDAOImpl(NamedParameterJdbcTemplate jdbcTemplate, Class<T> entityClass, InsertUpdateCallback insertUpdateCallback) {
+        this(new TableDAOImpl(jdbcTemplate), entityClass, insertUpdateCallback);
     }
 
-    public EntityDAOImpl(TableDAO tableDAO, Class<T> entityClass) {
+    public EntityDAOImpl(TableDAO tableDAO, Class<T> entityClass, InsertUpdateCallback insertUpdateCallback) {
         this.tableDAO = tableDAO;
         this.tableMeta = TableMetaResolver.resolve(entityClass);
+        this.insertUpdateCallback = insertUpdateCallback;
         init();
     }
 
@@ -99,7 +101,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
-    public <K, V> Map<K, V> selectForKeyValue(String columns, String condition, Map<String, ?> paramMap) {
+    public <K, V> Map<K, V> selectForKeyValue(String columns, String condition, Map<String, Object> paramMap) {
         return tableDAO.selectForKeyValue(tableMeta.getSelectSQL(columns) + SqlHelper.buildWhere(condition), paramMap);
     }
 
@@ -109,14 +111,14 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
-    public List<T> select(Map<String, ?> paramMap) {
+    public List<T> select(Map<String, Object> paramMap) {
         Map<String, Object> formatMap = new HashMap<>();
         String sql = SQLParamCleaner.formatSql(tableMeta.getSelectConditionSQL(), paramMap, formatMap);
         return select(tableMeta.getEntityClass(), sql, formatMap);
     }
 
     @Override
-    public List<T> select(String condition, Map<String, ?> paramMap) {
+    public List<T> select(String condition, Map<String, Object> paramMap) {
         return select(tableMeta.getSelectColumn(), condition, paramMap);
     }
 
@@ -126,7 +128,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
-    public List<T> select(String columns, String condition, Map<String, ?> paramMap) {
+    public List<T> select(String columns, String condition, Map<String, Object> paramMap) {
         return select(tableMeta.getEntityClass(), columns, condition, paramMap);
     }
 
@@ -196,11 +198,11 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
-    public <E> List<E> select(Class<E> clazz, String columns, String condition, Map<String, ?> paramMap) {
+    public <E> List<E> select(Class<E> clazz, String columns, String condition, Map<String, Object> paramMap) {
         return select(clazz, tableMeta.getSelectSQL(columns) + SqlHelper.buildWhere(condition), paramMap);
     }
 
-    private  <E> List<E> select(Class<E> clazz, String sql, Map<String, ?> paramMap) {
+    private  <E> List<E> select(Class<E> clazz, String sql, Map<String, Object> paramMap) {
         return (List<E>) watchSelect(() -> {
             List<E> list = selectWithoutCascadeSelect(clazz, sql, paramMap);
             cascadeSelect(clazz, (List<T>) list);
@@ -209,17 +211,17 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
-    public <E> List<E> selectWithoutCascadeSelect(Class<E> clazz, String columns, String condition, Map<String, ?> paramMap) {
+    public <E> List<E> selectWithoutCascadeSelect(Class<E> clazz, String columns, String condition, Map<String, Object> paramMap) {
         return selectWithoutCascadeSelect(clazz,tableMeta.getSelectSQL(columns) + SqlHelper.buildWhere(condition), paramMap);
     }
 
-    private  <E> List<E> selectWithoutCascadeSelect(Class<E> clazz, String sql, Map<String, ?> paramMap) {
+    private  <E> List<E> selectWithoutCascadeSelect(Class<E> clazz, String sql, Map<String, Object> paramMap) {
         List<E> list = tableDAO.select(clazz, sql, paramMap);
         return list;
     }
 
     @Override
-    public <K, V> Map<K, V> selectWithoutCascadeSelect(String columns, String condition, Map<String, ?> paramMap) {
+    public <K, V> Map<K, V> selectWithoutCascadeSelect(String columns, String condition, Map<String, Object> paramMap) {
         return tableDAO.selectForKeyValue(tableMeta.getSelectSQL(columns) + SqlHelper.buildWhere(condition), paramMap);
     }
 
@@ -404,7 +406,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
-    public int delete(String condition, Map<String, ?> paramMap) {
+    public int delete(String condition, Map<String, Object> paramMap) {
         if (hasDeleteReference()) {
             // 级联删除(@OneToMany @ManyToMany)
             List<ID> ids = select(tableMeta.getIdMeta().getIdClass(), tableMeta.getIdMeta().getIdPropertyName(), condition, paramMap);
@@ -514,8 +516,9 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                 }
             }
 
+            Map<String, Object> args;
             if (insert) {
-                Map<String, Object> args = getArgsFromEntity(entity, false);
+                args = getArgsFromEntity(entity, false);
 
                 if (Context.getDialect().getType() == DatabaseType.PostgreSQL) {
                     for (Map.Entry<String, Object> arg : args.entrySet()) {
@@ -544,7 +547,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                     setIdValue(entity, tableDAO.insertAndReturnKey(tableMeta.getTableName(), tableMeta.getColumnNames(), args, tableMeta.getIdMeta().getIdPropertyName()));
                 }
             } else {
-                Map<String, Object> args = getArgsFromEntity(entity, true);
+                args = getArgsFromEntity(entity, true);
                 if (Objects.nonNull(tableMeta.getVersionField())) {
                     String versionColumn = tableMeta.getFieldColumnNameMap().get(tableMeta.getVersionField());
                     Number version = (Number) getPropertyValue(entity, tableMeta.getVersionField().getName());
@@ -561,6 +564,10 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                 }
 
                 update(tableMeta.getUpdateColumn(), tableMeta.getIdMeta().getIdColumnName() + " = :" + tableMeta.getIdMeta().getIdPropertyName(), args);
+            }
+
+            if (Objects.nonNull(insertUpdateCallback)) {
+                insertUpdateCallback.handler(insert, entity, args);
             }
 
             if (hasSaveReference()) {
@@ -583,7 +590,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                                 }
 
                                 for (Object referenceEntity : list) {
-                                    tableDAO.insert(reference.getManyToMany().tableName(), reference.getManyToMany().joinColumnId() + "," + reference.getManyToMany().inverseJoinColumnId(), Map.of(reference.getManyToMany().joinColumnId(), getIdValue(entity), reference.getManyToMany().inverseJoinColumnId(), getIdValue(referenceEntity)));
+                                    tableDAO.insert(reference.getManyToMany().tableName(), reference.getManyToMany().joinColumnId() + "," + reference.getManyToMany().inverseJoinColumnId(), new HashMap<>(Map.of(reference.getManyToMany().joinColumnId(), getIdValue(entity), reference.getManyToMany().inverseJoinColumnId(), getIdValue(referenceEntity))));
                                 }
                             }
 
@@ -646,14 +653,14 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
         return update(columns, "id = :id", ArrayUtils.addAll(args, id));
     }
 
-    public int updateById(String columns, ID id, Map<String, ?> paramMap) {
+    public int updateById(String columns, ID id, Map<String, Object> paramMap) {
         Map<String, Object> args = new LinkedHashMap<>(paramMap);
         args.put("id", id);
         return update(columns, "id = :id", args);
     }
 
     @Override
-    public int updateByIds(String columns, Collection<ID> ids, Map<String, ?> paramMap) {
+    public int updateByIds(String columns, Collection<ID> ids, Map<String, Object> paramMap) {
         Map<String, Object> args = new LinkedHashMap<>(paramMap);
         args.put("ids", ids);
         return update(columns, "id IN (:ids)", args);
@@ -688,7 +695,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
-    public int update(String columns, String condition, Map<String, ?> paramMap) {
+    public int update(String columns, String condition, Map<String, Object> paramMap) {
         return tableDAO.update(tableMeta.getTableName(), tableMeta.appendColumnVar(columns, true), condition, paramMap);
     }
 

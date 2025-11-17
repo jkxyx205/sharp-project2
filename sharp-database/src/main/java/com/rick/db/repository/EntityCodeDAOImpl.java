@@ -2,6 +2,7 @@ package com.rick.db.repository;
 
 import com.rick.common.http.exception.BizException;
 import com.rick.db.repository.model.EntityIdCode;
+import com.rick.db.repository.support.InsertUpdateCallback;
 import com.rick.db.util.OperatorUtils;
 import lombok.AccessLevel;
 import lombok.NonNull;
@@ -26,12 +27,12 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
     public EntityCodeDAOImpl() {
     }
 
-    public EntityCodeDAOImpl(NamedParameterJdbcTemplate jdbcTemplate, Class<T> entityClass) {
-        this(new TableDAOImpl(jdbcTemplate), entityClass);
+    public EntityCodeDAOImpl(NamedParameterJdbcTemplate jdbcTemplate, Class<T> entityClass, InsertUpdateCallback insertUpdateCallback) {
+        this(new TableDAOImpl(jdbcTemplate), entityClass, insertUpdateCallback);
     }
 
-    public EntityCodeDAOImpl(TableDAO tableDAO, Class<T> entityClass) {
-       super(tableDAO, entityClass);
+    public EntityCodeDAOImpl(TableDAO tableDAO, Class<T> entityClass, InsertUpdateCallback insertUpdateCallback) {
+       super(tableDAO, entityClass, insertUpdateCallback);
     }
 
     @Override
