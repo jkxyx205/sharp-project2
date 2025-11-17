@@ -1,8 +1,14 @@
 package com.rick.test;
 
+import com.rick.common.function.SFunction;
+import com.rick.db.util.OperatorUtils;
+import com.rick.test.module.db.user.entity.Pet;
 import com.rick.test.module.db.user.entity.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.ClassUtils;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Rick.Xu
@@ -46,6 +52,24 @@ public class SimpleTest {
 
         ClassLoader userLoader = User.class.getClassLoader();
         System.out.println("User class loader: " + userLoader); // AppClassLoader
+    }
+
+    @Test
+    public void testOperatorUtils() {
+        Pet pet1 = Pet.builder().id(1L).name("pet1").build();
+        Pet pet2 = Pet.builder().id(2L).name("pet2").build();
+
+        User user1 = User.builder().id(8L).name("Rick").build();
+        pet1.setUser(user1);
+
+        User user2 = User.builder().id(9L).name("Tom").build();
+        pet2.setUser(user1);
+
+        Map<String, List<Pet>> map1 = OperatorUtils.groupMap(List.of(pet1, pet2), Pet::getName);
+
+        Map<Long, List<Pet>> map2 = OperatorUtils.groupMap(List.of(pet1, pet2), Pet::getUserId);
+        Map<Long, List<Pet>> map3 = OperatorUtils.groupMap(List.of(pet1, pet2), (SFunction<Pet, Long>) pet -> pet.getUser().getId());
+
     }
 
 }
