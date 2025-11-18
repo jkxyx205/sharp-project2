@@ -2,6 +2,8 @@ package com.rick.db.repository.support.baseinfo;
 
 import com.rick.db.repository.*;
 import com.rick.db.repository.support.SqlHelper;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -80,6 +82,11 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
     }
 
     @Override
+    public <E> List<E> select(@NotNull Class<E> clazz, @NotBlank String sql, Map<String, Object> paramMap) {
+        return super.select(clazz, isSimpleSingleTable(sql) ? addIsDeletedCondition(sql) : sql, paramMap);
+    }
+
+    @Override
     public <E> List<E> select(String sql, Map<String, Object> paramMap, JdbcTemplateCallback<E> jdbcTemplateCallback) {
         return super.select(isSimpleSingleTable(sql) ? addIsDeletedCondition(sql) : sql, paramMap, jdbcTemplateCallback);
     }
@@ -150,21 +157,57 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
     }
 
     public static boolean isSimpleSingleTable(String sql) {
-        if (sql == null || sql.trim().isEmpty()) return false;
-
-        String normalized = sql.replaceAll("\\s+", " ").trim().toUpperCase();
-
-        // 基本检查
-        if (!normalized.startsWith("SELECT ") || !normalized.contains(" FROM ")) {
+        if (sql == null || sql.trim().isEmpty()) {
             return false;
         }
 
-        // 排除子查询：任何包含括号的都排除
-        if (sql.contains("(") || sql.contains(")")) {
+        sql = sql.trim().toUpperCase();
+
+        // 检查是否包含JOIN关键字
+        if (sql.contains(" JOIN ") || sql.contains(" INNER JOIN ") ||
+                sql.contains(" LEFT JOIN ") || sql.contains(" RIGHT JOIN ") ||
+                sql.contains(" FULL JOIN ") || sql.contains(" CROSS JOIN ") ||
+                sql.contains(" OUTER JOIN ")) {
             return false;
         }
 
-        // 排除其他多表关键字
-        return !normalized.matches(".*\\b(JOIN|UNION|EXISTS)\\b.*");
+        // 检查是否包含UNION
+        if (sql.contains(" UNION ")) {
+            return false;
+        }
+
+        // 检查FROM子句中的逗号(多表查询)
+        Pattern fromPattern = Pattern.compile("FROM\\s+([^WHERE|GROUP|ORDER|LIMIT|HAVING|;]+)",
+                Pattern.CASE_INSENSITIVE);
+        Matcher matcher = fromPattern.matcher(sql);
+        if (matcher.find()) {
+            String fromClause = matcher.group(1).trim();
+            // 移除子查询
+            fromClause = removeSubqueries(fromClause);
+            // 检查是否有逗号分隔的多个表
+            if (fromClause.contains(",")) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // 辅助方法: 移除子查询
+    private static String removeSubqueries(String sql) {
+        int level = 0;
+        StringBuilder result = new StringBuilder();
+
+        for (char c : sql.toCharArray()) {
+            if (c == '(') {
+                level++;
+            } else if (c == ')') {
+                level--;
+            } else if (level == 0) {
+                result.append(c);
+            }
+        }
+
+        return result.toString();
     }
 }
