@@ -1,5 +1,6 @@
-package com.rick.db.repository;
+package com.rick.db.repository.support.baseinfo;
 
+import com.rick.db.repository.*;
 import com.rick.db.repository.support.SqlHelper;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -100,16 +101,17 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
         }
 
         paramMap.put("is_deleted", false);
+        addInsertInfo(paramMap);
         return paramMap;
     }
 
-    public long getUserId() {
-//        User user = UserContextHolder.get();
-//        user = (user == null) ? User.builder().id(1L).build() : user;
-//        return user.getId();
+    protected long getUserId() {
         return 1L;
     }
 
+    protected void addInsertInfo(Map<String, Object> paramMap) {
+
+    }
 
     private static final Pattern WHERE_PATTERN = Pattern.compile("\\bwhere\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern ORDER_GROUP_LIMIT_PATTERN =
