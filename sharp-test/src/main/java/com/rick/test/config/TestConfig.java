@@ -1,10 +1,10 @@
 package com.rick.test.config;
 
 import com.rick.common.http.web.SharpWebMvcConfigurer;
-import com.rick.db.repository.ExtendTableDAOImpl;
-import com.rick.db.repository.support.ExtendInsertUpdateCallback;
 import com.rick.db.repository.support.IdToEntityConverterFactory;
 import com.rick.db.repository.support.InsertUpdateCallback;
+import com.rick.db.repository.support.baseinfo.ExtendInsertUpdateCallback;
+import com.rick.db.repository.support.baseinfo.ExtendTableDAOImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;

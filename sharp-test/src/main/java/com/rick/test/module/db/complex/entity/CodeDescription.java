@@ -3,6 +3,7 @@ package com.rick.test.module.db.complex.entity;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.rick.db.repository.Table;
 import com.rick.db.repository.model.BaseCodeDescriptionEntity;
+import com.rick.db.repository.support.category.RowCategory;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -19,7 +20,7 @@ import lombok.experimental.SuperBuilder;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @SuperBuilder
 @Table(value = "sys_code_description", comment = "编号-描述")
-public class CodeDescription extends BaseCodeDescriptionEntity<Long> {
+public class CodeDescription extends BaseCodeDescriptionEntity<Long> implements RowCategory<CodeDescription.CategoryEnum> {
 
     @NotNull
     CategoryEnum category;
