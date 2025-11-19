@@ -44,7 +44,7 @@ public class User extends BaseEntity<Long> {
     /**
      * 一对多外键关联
      */
-    @OneToMany(mappedBy = "user", joinColumnId = "user_id")
+    @OneToMany(mappedBy = "user", joinColumnId = "user_id", cascadeSaveItemDeleteCheck = true)
     /**
      * /users?id=1&name=Rick&petIds=1&petIds=2
      * /users?id=1&name=Rick&pet_ids=3&pet_ids=4
