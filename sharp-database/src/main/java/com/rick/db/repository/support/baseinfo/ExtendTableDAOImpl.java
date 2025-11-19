@@ -78,17 +78,17 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
 
     @Override
     public <E> List<E> select(Class<E> clazz, String sql, Object... args) {
-        return super.select(clazz, isSimpleSingleTable(sql) ? addIsDeletedCondition(sql) : sql, args);
+        return super.select(clazz, addIsDeletedCondition(sql), args);
     }
 
     @Override
     public <E> List<E> select(@NotNull Class<E> clazz, @NotBlank String sql, Map<String, Object> paramMap) {
-        return super.select(clazz, isSimpleSingleTable(sql) ? addIsDeletedCondition(sql) : sql, paramMap);
+        return super.select(clazz, addIsDeletedCondition(sql), paramMap);
     }
 
     @Override
     public <E> List<E> select(String sql, Map<String, Object> paramMap, JdbcTemplateCallback<E> jdbcTemplateCallback) {
-        return super.select(isSimpleSingleTable(sql) ? addIsDeletedCondition(sql) : sql, paramMap, jdbcTemplateCallback);
+        return super.select(addIsDeletedCondition(sql), paramMap, jdbcTemplateCallback);
     }
 
     @EventListener(ApplicationReadyEvent.class)
@@ -131,6 +131,10 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
 
         String trimmedSql = sql.trim();
 
+        if (!SqlSingleTableChecker.isSingleTableQuery(sql)) {
+            return sql;
+        }
+
         Matcher whereMatcher = WHERE_PATTERN.matcher(trimmedSql);
         Matcher clauseMatcher = ORDER_GROUP_LIMIT_PATTERN.matcher(trimmedSql);
 
@@ -156,58 +160,4 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
         }
     }
 
-    public static boolean isSimpleSingleTable(String sql) {
-        if (sql == null || sql.trim().isEmpty()) {
-            return false;
-        }
-
-        sql = sql.trim().toUpperCase();
-
-        // 检查是否包含JOIN关键字
-        if (sql.contains(" JOIN ") || sql.contains(" INNER JOIN ") ||
-                sql.contains(" LEFT JOIN ") || sql.contains(" RIGHT JOIN ") ||
-                sql.contains(" FULL JOIN ") || sql.contains(" CROSS JOIN ") ||
-                sql.contains(" OUTER JOIN ")) {
-            return false;
-        }
-
-        // 检查是否包含UNION
-        if (sql.contains(" UNION ")) {
-            return false;
-        }
-
-        // 检查FROM子句中的逗号(多表查询)
-        Pattern fromPattern = Pattern.compile("FROM\\s+([^WHERE|GROUP|ORDER|LIMIT|HAVING|;]+)",
-                Pattern.CASE_INSENSITIVE);
-        Matcher matcher = fromPattern.matcher(sql);
-        if (matcher.find()) {
-            String fromClause = matcher.group(1).trim();
-            // 移除子查询
-            fromClause = removeSubqueries(fromClause);
-            // 检查是否有逗号分隔的多个表
-            if (fromClause.contains(",")) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    // 辅助方法: 移除子查询
-    private static String removeSubqueries(String sql) {
-        int level = 0;
-        StringBuilder result = new StringBuilder();
-
-        for (char c : sql.toCharArray()) {
-            if (c == '(') {
-                level++;
-            } else if (c == ')') {
-                level--;
-            } else if (level == 0) {
-                result.append(c);
-            }
-        }
-
-        return result.toString();
-    }
 }
