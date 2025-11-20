@@ -12,6 +12,7 @@ import com.rick.db.util.OperatorUtils;
 import jakarta.annotation.Resource;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -52,8 +53,9 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     @Resource
     private ConversionService dbConversionService;
 
-    @Resource
     @Getter
+    @Setter
+    @Resource
     private TableDAO tableDAO;
 
     @Getter
