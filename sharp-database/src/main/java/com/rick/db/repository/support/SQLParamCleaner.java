@@ -113,7 +113,7 @@ public class SQLParamCleaner {
             formatMap = new HashMap<>();
         }
 
-        srcSql = handleHolderSQL(srcSql, params);
+        srcSql = replaceVars(srcSql, params);
 
         List<ParamHolder> paramList = splitParam(srcSql, fullPattern, paramPattern);
 
@@ -406,11 +406,11 @@ public class SQLParamCleaner {
     private static final char PREFIX_END =  '{';
     private static final char SUFFIX = '}';
 
-    private static String handleHolderSQL(String srcSQL, Map<String, Object> params) {
-        char[] sqlChar = srcSQL.toCharArray();
+    public static String replaceVars(String template, Map<String, Object> params) {
+        char[] sqlChar = template.toCharArray();
         int len = sqlChar.length;
 
-        StringBuilder sqlBuilder = new StringBuilder(len);
+        StringBuilder templateBuilder = new StringBuilder(len);
 
         StringBuilder holderBuilder = new StringBuilder();
 
@@ -427,7 +427,7 @@ public class SQLParamCleaner {
                 Object holderValue = params.get(holderBuilder.toString());
                 String resultText = Objects.nonNull(holderValue) ? String.valueOf(holderValue) : "";
 
-                sqlBuilder.append(resultText);
+                templateBuilder.append(resultText);
                 holderBuilder.delete(0, holderBuilder.length());
                 continue;
             }
@@ -437,11 +437,11 @@ public class SQLParamCleaner {
             }
 
             if (!findHolder) {
-                sqlBuilder.append(c);
+                templateBuilder.append(c);
             }
         }
 
-        return sqlBuilder.toString();
+        return templateBuilder.toString();
     }
 
     private static String ignoreAndReturnSQL(String srcSql, ParamHolder h) {

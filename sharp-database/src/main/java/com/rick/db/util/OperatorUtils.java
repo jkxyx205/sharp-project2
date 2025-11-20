@@ -36,6 +36,14 @@ public class OperatorUtils {
         return list.stream().collect(Collectors.toMap(EntityId::getId, Function.identity()));
     }
 
+    public static <R, T> Map<R, T> map(List<T> list, SFunction<T, R> function) {
+        return list.stream().collect(Collectors.toMap(t -> function.isMethodReference() ? (R) new BeanWrapperImpl(t).getPropertyValue(function.getPropertyName()) : function.apply(t), Function.identity()));
+    }
+
+    public static <ID, T extends EntityId<ID>> Map<ID, List<T>> groupMap(List<T> list) {
+         return list.stream().collect(Collectors.groupingBy(EntityId::getId));
+    }
+
     public static <R, T> Map<R, List<T>> groupMap(List<T> list, SFunction<T, R> function) {
         return list.stream().collect(Collectors.groupingBy(t -> function.isMethodReference() ? (R) new BeanWrapperImpl(t).getPropertyValue(function.getPropertyName()) : function.apply(t)));
     }
