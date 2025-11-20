@@ -690,7 +690,6 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
                             String referenceColumnId = StringUtils.defaultIfBlank(reference.getOneToMany().joinColumnId(), tableMeta.getReferenceColumnId());
                             ID idValue = getIdValue(entity);
-                            // TODO 检查
                             if (reference.getOneToMany().cascadeSaveItemDeleteCheck()) {
                                 itemDeletedCheckCallback0(referenceDAO, resolveDeletedIds(list, referenceDAO.select(referenceDAO.getTableMeta().getIdMeta().getIdClass(), referenceDAO.getTableMeta().getIdMeta().getIdPropertyName(), referenceColumnId +" = :referenceId", Map.of("referenceId", idValue))));
                             }
@@ -699,6 +698,8 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                                 referenceDAO.delete(referenceColumnId + " = ?", idValue);
                             } else {
                                 if (reference.getOneToMany().cascadeSaveItemDelete()) {
+                                    handlerReferenceListBefore(referenceDAO, list, referenceColumnId, idValue);
+
                                     Set<?> ids = list.stream().map(e -> getIdValue(e)).filter(id -> Objects.nonNull(id)).collect(Collectors.toSet());
                                     if (CollectionUtils.isEmpty(ids)) {
                                         referenceDAO.delete(referenceColumnId + " = ?", idValue);
@@ -736,6 +737,11 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
     private boolean hasSaveReference() {
         return MapUtils.isNotEmpty(tableMeta.getReferenceMap()) && tableMeta.getReferenceMap().values().stream().anyMatch(reference -> Objects.nonNull(reference.getManyToMany()) || (Objects.nonNull(reference.getOneToMany()) && reference.getOneToMany().cascadeSave()) || (Objects.nonNull(reference.getManyToOne()) && reference.getManyToOne().cascadeSave()));
+    }
+
+
+    protected void handlerReferenceListBefore(EntityDAO entityCodeDAO, List<?> entities, String refColumnName, Object refValue) {
+
     }
 
     @Override

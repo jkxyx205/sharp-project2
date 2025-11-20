@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotEmpty;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -20,5 +21,7 @@ public interface EntityCodeDAO<T, ID> extends EntityDAO<T, ID> {
     Optional<ID> selectIdByCode(@NotBlank String code);
 
     List<ID> selectIdsByCodes(@NotEmpty Collection<String> codes);
+
+    Map<String, ID> selectCodeIdMap(@NotEmpty Collection<String> codes);
 
 }

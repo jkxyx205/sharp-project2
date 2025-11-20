@@ -88,6 +88,20 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
         return select(getTableMeta().getIdMeta().getIdClass(), getTableMeta().getIdMeta().getIdPropertyName(), "code IN (:codes)", Map.of("code", codes));
     }
 
+    @Override
+    public Map<String, ID> selectCodeIdMap(Collection<String> codes) {
+        return selectForKeyValue("code, id", "code IN (:codes)", Map.of("codes", codes));
+    }
+
+
+    @Override
+    protected void handlerReferenceListBefore(EntityDAO subTableEntityDAO, List<?> subDataList, String refColumnName, Object refValue) {
+        if (subTableEntityDAO instanceof EntityCodeDAO && this != subTableEntityDAO) {
+            fillEntityIdsByCodes((EntityCodeDAO) subTableEntityDAO, (Collection<T>) subDataList, refColumnName, refValue);
+        }
+
+    }
+
     private void fillEntityIdByCode(T t) {
         if (Objects.isNull(t.getId()) && StringUtils.isNotBlank(t.getCode())) {
             Optional<ID> option = this.selectIdByCode(t.getCode());

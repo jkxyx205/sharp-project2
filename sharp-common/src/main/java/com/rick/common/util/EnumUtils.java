@@ -19,6 +19,8 @@ public class EnumUtils {
 
     private static final String GET_CODE_METHOD_NAME = "getCode";
 
+    private static final String GET_LABEL_METHOD_NAME = "getLabel";
+
     /**
      * @param enumType 枚举class
      * @param code     code
@@ -61,8 +63,26 @@ public class EnumUtils {
      * @return
      */
     public static Object getCode(Enum en) {
+        return getData(en, GET_CODE_METHOD_NAME);
+    }
+
+    /**
+     * 获取code值
+     * @param en
+     * @return
+     */
+    public static Object getLabel(Enum en) {
+        return getData(en, GET_LABEL_METHOD_NAME);
+    }
+
+    /**
+     * 获取值
+     * @param getMethodName
+     * @return
+     */
+    public static Object getData(Enum en, String getMethodName) {
         try {
-            Method getCodeMethod = en.getClass().getMethod(GET_CODE_METHOD_NAME);
+            Method getCodeMethod = en.getClass().getMethod(getMethodName);
             return getCodeMethod.invoke(en);
         } catch (Exception e) {
             return en.name();
