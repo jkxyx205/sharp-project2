@@ -68,7 +68,6 @@ public class CategoryEntityCodeDAOImpl<T extends EntityIdCode<ID> & RowCategory<
 
     @Override
     public T insertOrUpdate(T entity) {
-        this.fillEntityIdByCode(entity);
         return super.insertOrUpdate(entity);
     }
 
@@ -82,18 +81,11 @@ public class CategoryEntityCodeDAOImpl<T extends EntityIdCode<ID> & RowCategory<
 
     @Override
     public T update(T entity) {
-        fillEntityIdByCode(entity);
         if (exists("id <> ? AND code = ? AND "+ categoryColumnName +" = ?", new Object[]{entity.getId(), entity.getCode(), entity.getCategory().toString()})) {
             throw new BizException("编号已经存在");
         }
         return insertOrUpdate0(entity, false);
     }
-
-//    @Override
-//    protected Collection<T> insertOrUpdate0(Collection<T> entityList, String refColumnName, Object refValue, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer) {
-//        fillEntityIdsByCodes(this, entityList);
-//        return super.insertOrUpdate0(entityList, refColumnName, refValue, deleteItem, deletedIdsConsumer);
-//    }
 
     public Optional<T> selectByCategoryAndCode(@NotNull E category, @NotBlank String code) {
         return OperatorUtils.expectedAsOptional(select("code = ? AND "+categoryColumnName+" = ?", code, category.toString()));
@@ -103,7 +95,8 @@ public class CategoryEntityCodeDAOImpl<T extends EntityIdCode<ID> & RowCategory<
         return select(category + " = :category", Map.of(category, category.toString()));
     }
 
-    private void fillEntityIdByCode(T t) {
+    @Override
+    protected void fillEntityIdByCode(T t) {
         if (Objects.isNull(t.getId()) && StringUtils.isNotBlank(t.getCode())) {
             Optional<T> option = selectByCategoryAndCode(t.getCategory(), t.getCode());
             if (option.isPresent()) {

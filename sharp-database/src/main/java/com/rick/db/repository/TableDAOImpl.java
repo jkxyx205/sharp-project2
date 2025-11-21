@@ -48,12 +48,12 @@ public class TableDAOImpl implements TableDAO {
 
     @Override
     public Boolean exists(String sql, Object... args) {
-        return select(String.class, sql + " LIMIT 1", args).size() > 0 ? true : false;
+        return select(sql + " LIMIT 1", args).size() > 0 ? true : false;
     }
 
     @Override
     public Boolean exists(String sql, Map<String, Object> paramMap) {
-        return select(String.class, sql + " LIMIT 1", paramMap).size() > 0 ? true : false;
+        return select(sql + " LIMIT 1", paramMap).size() > 0 ? true : false;
     }
 
     @Override
@@ -155,6 +155,11 @@ public class TableDAOImpl implements TableDAO {
         }
 
         return null;
+    }
+
+    @Override
+    public List<Map<String, Object>> select(String sql, Object... args) {
+        return namedParameterJdbcTemplate.getJdbcTemplate().query(sql, new ColumnMapRowMapper(), args);
     }
 
     @Override

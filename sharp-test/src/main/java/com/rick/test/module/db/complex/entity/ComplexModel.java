@@ -9,7 +9,6 @@ import com.rick.db.repository.Embedded;
 import com.rick.db.repository.Select;
 import com.rick.db.repository.Table;
 import com.rick.db.repository.model.BaseEntity;
-import com.rick.meta.config.validator.DictValueCheck;
 import com.rick.meta.dict.model.DictType;
 import com.rick.meta.dict.model.DictValue;
 import com.rick.test.module.db.complex.model.EmbeddedValue;
@@ -48,7 +47,6 @@ public class ComplexModel extends BaseEntity<Long> {
     @JsonDeserialize(using = EntityWithCodePropertyDeserializer.class)
     @Select(value = "select name code, label from sys_dict WHERE type = 'MATERIAL_TYPE'  AND name = :name", params="name@materialType.code", nullWhenParamsIsNull="code")
     @DictType(type = "MATERIAL_TYPE") // 可以省略 从@Sql 获取label
-    @DictValueCheck(type = "MATERIAL_TYPE")
     DictValue materialType;
 
     /**
@@ -58,7 +56,6 @@ public class ComplexModel extends BaseEntity<Long> {
     @JsonAlias("unit")
     @JsonDeserialize(using = EntityWithCodePropertyDeserializer.class)
     @DictType(type = "UNIT")
-    @DictValueCheck(type = "UNIT")
     DictValue unit;
 
     /**
@@ -81,7 +78,6 @@ public class ComplexModel extends BaseEntity<Long> {
     @JsonAlias("categoryDict")
     @JsonDeserialize(using = EntityWithCodePropertyDeserializer.class)
     @DictType(type = "CategoryEnum")
-    @DictValueCheck(type = "CategoryEnum")
     DictValue categoryDict;
 
     @Column(comment = "年龄", nullable = false)

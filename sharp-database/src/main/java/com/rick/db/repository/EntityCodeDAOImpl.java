@@ -102,7 +102,7 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
 
     }
 
-    private void fillEntityIdByCode(T t) {
+    protected void fillEntityIdByCode(T t) {
         if (Objects.isNull(t.getId()) && StringUtils.isNotBlank(t.getCode())) {
             Optional<ID> option = this.selectIdByCode(t.getCode());
             if (option.isPresent()) {

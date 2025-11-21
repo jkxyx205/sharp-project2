@@ -1,2 +1,2 @@
 rootProject.name = 'sharp-project2'
-include "sharp-common", "sharp-database", "sharp-test"
+include "sharp-common", "sharp-database", "sharp-meta", "sharp-test"
