@@ -1,0 +1,9 @@
+group = 'com.rick.meta'
+version = libs.versions.sharp.get()
+description = 'sharp-meta'
+
+dependencies {
+//    api project(':sharp-common')
+    implementation project(":sharp-database")
+//    compileOnly 'org.postgresql:postgresql'
+}
