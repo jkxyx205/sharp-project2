@@ -47,13 +47,13 @@ public class TableDAOImpl implements TableDAO {
     private ConversionService conversionService;
 
     @Override
-    public Boolean exists(String sql, Object... args) {
-        return select(sql + " LIMIT 1", args).size() > 0 ? true : false;
+    public boolean exists(String sql, Object... args) {
+        return select(sql + " LIMIT 1", args).size() > 0;
     }
 
     @Override
-    public Boolean exists(String sql, Map<String, Object> paramMap) {
-        return select(sql + " LIMIT 1", paramMap).size() > 0 ? true : false;
+    public boolean exists(String sql, Map<String, Object> paramMap) {
+        return select(sql + " LIMIT 1", paramMap).size() > 0;
     }
 
     @Override

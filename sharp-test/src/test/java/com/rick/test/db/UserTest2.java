@@ -151,6 +151,9 @@ public class UserTest2 {
     public void testSelect2() {
         List<User> userList = userDAO.select(Map.of("id", userId));
         assertEquals(1, userList.size());
+        assertEquals(true, userDAO.exists(userId));
+        assertEquals(2L, userDAO.count(null));
+        assertEquals(1L, userDAO.count("id = :id", Map.of("id", userId)));
     }
 
     @Test

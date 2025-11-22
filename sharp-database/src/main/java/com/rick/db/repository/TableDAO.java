@@ -30,9 +30,9 @@ public interface TableDAO {
 
     <E> List<E> select(String sql, Map<String, Object> paramMap, JdbcTemplateCallback<E> jdbcTemplateCallback);
 
-    Boolean exists(@NotBlank String sql, Object... args);
+    boolean exists(@NotBlank String sql, Object... args);
 
-    Boolean exists(@NotBlank String sql, Map<String, Object> paramMap);
+    boolean exists(@NotBlank String sql, Map<String, Object> paramMap);
 
     int update(String tableName, String columns, String condition, Object... args);
 

@@ -125,13 +125,38 @@ public class BaseServiceImpl<D extends EntityDAO<T, ID>, T extends EntityId<ID>,
     }
 
     @Override
-    public Boolean exists(String condition, Object... args) {
+    public boolean exists(ID id) {
+        return baseDAO.exists(id);
+    }
+
+    @Override
+    public boolean exists(String condition, Object... args) {
         return baseDAO.exists(condition, args);
     }
 
     @Override
-    public Boolean exists(String condition, T example) {
+    public boolean exists(String condition, Map<String, Object> paramMap) {
+        return baseDAO.exists(condition, paramMap);
+    }
+
+    @Override
+    public boolean exists(String condition, T example) {
         return baseDAO.exists(condition, example);
+    }
+
+    @Override
+    public long count(String condition, Object... args) {
+        return baseDAO.count(condition, args);
+    }
+
+    @Override
+    public long count(String condition, Map<String, Object> paramMap) {
+        return baseDAO.count(condition, paramMap);
+    }
+
+    @Override
+    public long count(String condition, T example) {
+        return baseDAO.count(condition, example);
     }
 
     @Override

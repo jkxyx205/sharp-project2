@@ -58,9 +58,19 @@ public interface EntityDAO<T, ID> {
 
     void cascadeSelect(List<T> list);
 
-    Boolean exists(String condition, Object... args);
+    boolean exists(@NotNull ID id);
 
-    Boolean exists(String condition, T example);
+    boolean exists(String condition, Object... args);
+
+    boolean exists(String condition, Map<String, Object> paramMap);
+
+    boolean exists(String condition, T example);
+
+    long count(String condition, Object... args);
+
+    long count(String condition, Map<String, Object> paramMap);
+
+    long count(String condition, T example);
 
     int deleteById(@NotNull ID id);
 
