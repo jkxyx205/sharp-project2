@@ -181,9 +181,9 @@ public final class StringUtils {
         if (Objects.isNull(value)) {
             return false;
         } else if (CharSequence.class.isAssignableFrom(value.getClass())) {
-            return org.apache.commons.lang3.StringUtils.isNotBlank((String)value) ? true : false;
+            return org.apache.commons.lang3.StringUtils.isNotBlank((String)value);
         } else if (Collection.class.isAssignableFrom(value.getClass())) {
-            return ((Collection)value).size() > 0 ? true : false;
+            return ((Collection)value).size() > 0;
         }
 
         return false;

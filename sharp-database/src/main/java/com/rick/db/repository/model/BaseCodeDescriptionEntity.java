@@ -21,7 +21,7 @@ import org.hibernate.validator.constraints.Length;
 public class BaseCodeDescriptionEntity<ID> extends BaseCodeEntity<ID> {
 
     @NotBlank(message = "描述不能为空")
-    @Length(max = 32, message = "描述不能超过32个字符")
+    @Length(max = 512, message = "描述不能超过512个字符")
     private String description;
 
 }
