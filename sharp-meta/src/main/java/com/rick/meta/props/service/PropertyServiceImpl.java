@@ -23,7 +23,7 @@ public class PropertyServiceImpl implements PropertyService, InitializingBean {
 
     private static final String UPDATE_SQL = "UPDATE sys_property SET value = ? WHERE name = ?";
 
-    private static final String SELECT_SQL = "SELECT name, value FROM sys_property WHERE name = :name";
+    private static final String SELECT_SQL = "SELECT name, value FROM sys_property";
 
     private final KeyValueProperties keyValueProperties;
 
@@ -68,7 +68,7 @@ public class PropertyServiceImpl implements PropertyService, InitializingBean {
         PropertyUtils.map.putAll(keyValueProperties.getItems());
         // 数据库属性
         try {
-            PropertyUtils.map.putAll(tableDAO.selectForKeyValue(SELECT_SQL, null));
+            PropertyUtils.map.putAll(tableDAO.selectForKeyValue(SELECT_SQL));
         } catch (Exception e) {
             log.warn("sys_property表没有创建成功！");
         }

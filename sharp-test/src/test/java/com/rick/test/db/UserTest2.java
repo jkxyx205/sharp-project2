@@ -154,6 +154,8 @@ public class UserTest2 {
         assertEquals(true, userDAO.exists(userId));
         assertEquals(2L, userDAO.count(null));
         assertEquals(1L, userDAO.count("id = :id", Map.of("id", userId)));
+        assertEquals(1L, userDAO.count("id = :id", User.builder().id(userId).build()));
+        userDAO.select(User.builder().id(userId).build()).get(0);
     }
 
     @Test

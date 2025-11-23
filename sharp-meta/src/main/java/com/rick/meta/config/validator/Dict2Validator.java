@@ -8,8 +8,6 @@ import jakarta.validation.ConstraintValidatorContext;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
-
 /**
  * @author Rick.Xu
  * @date 2024/8/19 01:56
@@ -24,7 +22,7 @@ public class Dict2Validator extends AbstractDictValidator implements ConstraintV
     @Override
     public boolean isValid(String dictCode, ConstraintValidatorContext constraintValidatorContext) {
         if (StringUtils.isNotBlank(dictCode)) {
-             return Objects.nonNull(isValid(constraintValidatorContext, dictCode, null));
+             return isValid(constraintValidatorContext, dictCode, null);
         }
 
         return true;
