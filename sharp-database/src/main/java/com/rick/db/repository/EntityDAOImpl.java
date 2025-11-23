@@ -158,14 +158,14 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     @Override
     public <E> List<E> select(Class<E> clazz, String columns, String condition, Object... args) {
         return (List<E>) watchSelect(() -> {
-            List<E> list = selectWithoutCascadeSelect(clazz, columns, condition, args);
+            List<E> list = selectWithoutCascade(clazz, columns, condition, args);
             cascadeSelect(clazz, (List<T>) list);
             return (T) list;
         });
     }
 
     @Override
-    public <E> List<E> selectWithoutCascadeSelect(Class<E> clazz, String columns, String condition, Object... args) {
+    public <E> List<E> selectWithoutCascade(Class<E> clazz, String columns, String condition, Object... args) {
         List<E> list = tableDAO.select(clazz, tableMeta.getSelectSQL(columns) + SqlHelper.buildWhere(condition), args);
         return list;
     }
@@ -216,11 +216,6 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
-    public <E> Optional<E> selectOne(Class<E> clazz, String columns, String condition, T example) {
-        return OperatorUtils.expectedAsOptional(select(clazz, columns, condition, example));
-    }
-
-    @Override
     public <E> List<E> select(Class<E> clazz, String columns, String condition, T example) {
         return select(clazz, columns, condition, getArgsFromEntity(example, true));
     }
@@ -232,25 +227,35 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
     private  <E> List<E> select(Class<E> clazz, String sql, Map<String, Object> paramMap) {
         return (List<E>) watchSelect(() -> {
-            List<E> list = selectWithoutCascadeSelect(clazz, sql, paramMap);
+            List<E> list = selectWithoutCascade(clazz, sql, paramMap);
             cascadeSelect(clazz, (List<T>) list);
             return (T) list;
         });
     }
 
     @Override
-    public <E> List<E> selectWithoutCascadeSelect(Class<E> clazz, String columns, String condition, Map<String, Object> paramMap) {
-        return selectWithoutCascadeSelect(clazz,tableMeta.getSelectSQL(columns) + SqlHelper.buildWhere(condition), paramMap);
+    public <E> List<E> selectWithoutCascade(Class<E> clazz, String columns, String condition, Map<String, Object> paramMap) {
+        return selectWithoutCascade(clazz,tableMeta.getSelectSQL(columns) + SqlHelper.buildWhere(condition), paramMap);
     }
 
-    private  <E> List<E> selectWithoutCascadeSelect(Class<E> clazz, String sql, Map<String, Object> paramMap) {
+    @Override
+    public <E> List<E> selectWithoutCascade(Class<E> clazz, String columns, String condition, T example) {
+        return selectWithoutCascade(clazz, columns, condition, getArgsFromEntity(example, true));
+    }
+
+    private  <E> List<E> selectWithoutCascade(Class<E> clazz, String sql, Map<String, Object> paramMap) {
         List<E> list = tableDAO.select(clazz, sql, paramMap);
         return list;
     }
 
     @Override
-    public <K, V> Map<K, V> selectWithoutCascadeSelect(String columns, String condition, Map<String, Object> paramMap) {
-        return tableDAO.selectForKeyValue(tableMeta.getSelectSQL(columns) + SqlHelper.buildWhere(condition), paramMap);
+    public <K, V> Map<K, V> selectForKeyValue(String columns, String condition, Object... args) {
+        return tableDAO.selectForKeyValue(tableMeta.getSelectSQL(columns) + SqlHelper.buildWhere(condition), args);
+    }
+
+    @Override
+    public <K, V> Map<K, V> selectForKeyValue(String columns, String condition, T example) {
+        return selectForKeyValue(columns, condition, getArgsFromEntity(example, true));
     }
 
     @Override
@@ -785,10 +790,20 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
+    public int updateById(String columns, ID id, T example) {
+        return updateById(columns, id, getArgsFromEntity(example, true));
+    }
+
+    @Override
     public int updateByIds(String columns, Collection<ID> ids, Map<String, Object> paramMap) {
         Map<String, Object> args = new LinkedHashMap<>(paramMap);
         args.put("ids", ids);
         return update(columns, "id IN (:ids)", args);
+    }
+
+    @Override
+    public int updateByIds(String columns, Collection<ID> ids, T example) {
+        return updateByIds(columns, ids, getArgsFromEntity(example, true));
     }
 
     @Override
@@ -822,6 +837,11 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     @Override
     public int update(String columns, String condition, Map<String, Object> paramMap) {
         return tableDAO.update(tableMeta.getTableName(), tableMeta.appendColumnVar(columns, true), condition, paramMap);
+    }
+
+    @Override
+    public int update(String columns, String condition, T example) {
+        return update(columns, condition, getArgsFromEntity(example, true));
     }
 
     private void setIdValue(Object entity, Object id) {
