@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.rick.db.repository.Column;
+import com.rick.db.repository.Transient;
 import com.rick.db.repository.support.Constants;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -27,6 +28,9 @@ public class BaseEntityInfo implements Serializable {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Long createBy;
 
+    @Transient
+    private String createByName;
+
     @Column(updatable = false, nullable = false, comment = "创建时间")
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private LocalDateTime createTime;
@@ -35,6 +39,9 @@ public class BaseEntityInfo implements Serializable {
     @JsonSerialize(using = ToStringSerializer.class)
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Long updateBy;
+
+    @Transient
+    private String updateByName;
 
     @Column(nullable = false, comment = "更新时间")
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)

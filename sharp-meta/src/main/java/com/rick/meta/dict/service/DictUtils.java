@@ -14,7 +14,6 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -82,71 +81,65 @@ final public class DictUtils {
             }
 
             return;
-        } else if (!mayEntityObject(obj)) {
+        } else if (!ObjectUtils.mayPureObject(obj)) {
             return;
         }
 
        Field[] allFields = FieldUtils.getAllFields(obj.getClass());
         for (Field field : allFields) {
-            Method method;
-            try {
-                method = obj.getClass().getMethod("get" + String.valueOf(field.getName().charAt(0)).toUpperCase() + field.getName().substring(1));
-                Object fieldValue = ReflectionUtils.invokeMethod(method, obj);
-                if (fieldValue == null) {
-                    continue;
-                }
+//            Method method;
+//                method = obj.getClass().getMethod("get" + String.valueOf(field.getName().charAt(0)).toUpperCase() + field.getName().substring(1));
+//                Object fieldValue = ReflectionUtils.invokeMethod(method, obj);
+            ReflectionUtils.makeAccessible(field);
+            Object fieldValue = ReflectionUtils.getField(field, obj);
+            if (fieldValue == null) {
+                continue;
+            }
 
-                DictType dictType = field.getAnnotation(DictType.class);
-                if (field.getType() == DictValue.class && dictType != null && fieldValue != null) {
+            DictType dictType = field.getAnnotation(DictType.class);
+            if (field.getType() == DictValue.class && dictType != null && fieldValue != null) {
 
-                    DictValue dictValue = (DictValue) fieldValue;
-                    if (StringUtils.isNotBlank(dictValue.getCode())) {
-                        String type = dictType.type();
-                        if (StringUtils.isNotBlank(type)) {
-                            Optional<Dict> dictLabel = getDictLabel(type, dictValue.getCode());
-                            dictLabel.ifPresent(value -> {
-                                dictValue.setLabel(value.getLabel());
-                                dictValue.setType(value.getType());
-                            });
-                        }
-
-                        String sql = dictType.sql();
-                        if(StringUtils.isBlank(dictValue.getLabel()) && StringUtils.isNotBlank(sql)) {
-                            OperatorUtils.expectedAsOptional(tableDAO.select(DictValue.class, sql, dictValue.getCode())).ifPresent(value -> dictValue.setLabel(value.getLabel()));
-                        }
+                DictValue dictValue = (DictValue) fieldValue;
+                if (StringUtils.isNotBlank(dictValue.getCode())) {
+                    String type = dictType.type();
+                    if (StringUtils.isNotBlank(type)) {
+                        Optional<Dict> dictLabel = getDictLabel(type, dictValue.getCode());
+                        dictLabel.ifPresent(value -> {
+                            dictValue.setLabel(value.getLabel());
+                            dictValue.setType(value.getType());
+                        });
                     }
-                } else if (Iterable.class.isAssignableFrom(fieldValue.getClass())) {
-                    // 集合
-                    Iterable iterable = (Iterable) fieldValue;
-                    Iterator iterator = iterable.iterator();
-                    while (iterator.hasNext()) {
-                        fieldValue = iterator.next();
-                        if (fieldValue instanceof DictValue) {
-                            Optional<Dict> dictLabel = getDictLabel(dictType.type(), ((DictValue) fieldValue).getCode());
-                            if (dictLabel.isPresent()) {
-                                ((DictValue)fieldValue).setLabel(dictLabel.get().getLabel());
-                                ((DictValue)fieldValue).setType(dictType.type());
-                            }
-                        } else if (mayEntityObject(fieldValue)) {
-                            fillDictLabel(fieldValue);
-                        }
+
+                    String sql = dictType.sql();
+                    if(StringUtils.isBlank(dictValue.getLabel()) && StringUtils.isNotBlank(sql)) {
+                        OperatorUtils.expectedAsOptional(tableDAO.select(DictValue.class, sql, dictValue.getCode())).ifPresent(value -> dictValue.setLabel(value.getLabel()));
                     }
-                } else if (Map.class.isAssignableFrom(fieldValue.getClass())) {
-                    // Map
-                    Map map = (Map)fieldValue;
-                    fillDictLabel(map.keySet());
-                    fillDictLabel(map.values());
-                } else if (mayEntityObject(fieldValue)) {
-                    fillDictLabel(fieldValue);
                 }
-            } catch (NoSuchMethodException e) {
-                throw new RuntimeException(e);
+            } else if (Iterable.class.isAssignableFrom(fieldValue.getClass())) {
+                // 集合
+                Iterable iterable = (Iterable) fieldValue;
+                Iterator iterator = iterable.iterator();
+                while (iterator.hasNext()) {
+                    fieldValue = iterator.next();
+                    if (fieldValue instanceof DictValue) {
+                        Optional<Dict> dictLabel = getDictLabel(dictType.type(), ((DictValue) fieldValue).getCode());
+                        if (dictLabel.isPresent()) {
+                            ((DictValue)fieldValue).setLabel(dictLabel.get().getLabel());
+                            ((DictValue)fieldValue).setType(dictType.type());
+                        }
+                    } else if (ObjectUtils.mayPureObject(fieldValue)) {
+                        fillDictLabel(fieldValue);
+                    }
+                }
+            } else if (Map.class.isAssignableFrom(fieldValue.getClass())) {
+                // Map
+                Map map = (Map)fieldValue;
+                fillDictLabel(map.keySet());
+                fillDictLabel(map.values());
+            } else if (ObjectUtils.mayPureObject(fieldValue)) {
+                fillDictLabel(fieldValue);
             }
 
         }
-    }
-
-    private static boolean mayEntityObject(Object obj) {
-        return ObjectUtils.mayPureObject(obj);
     }
 }
