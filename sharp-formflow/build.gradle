@@ -1,0 +1,15 @@
+group = 'com.rick.formflow'
+version = libs.versions.sharp.get()
+description = 'sharp-formflow'
+
+dependencies {
+//    api project(':sharp-common')
+    implementation project(":sharp-database")
+    implementation project(":sharp-meta")
+
+    implementation("com.rick.fileupload:sharp-fileupload:3.0-SNAPSHOT") {
+        exclude group: 'com.rick.common', module: 'sharp-common'
+        exclude group: 'com.rick.db', module: 'sharp-database'
+    }
+//    compileOnly 'org.postgresql:postgresql'
+}
