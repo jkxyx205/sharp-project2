@@ -7,6 +7,7 @@ import com.rick.common.util.IdGenerator;
 import com.rick.common.util.JsonUtils;
 import com.rick.db.config.Context;
 import com.rick.db.repository.model.DatabaseType;
+import com.rick.db.repository.model.EntityId;
 import com.rick.db.repository.support.*;
 import com.rick.db.util.OperatorUtils;
 import jakarta.annotation.Resource;
@@ -291,7 +292,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
                 EntityDAO referenceDAO = EntityDAOManager.getDAO(reference.getReferenceClass());
                 if (Objects.nonNull(reference.getManyToMany()) && reference.getManyToMany().cascadeSelect()) {
-                    List<Object[]> refTable = tableDAO.select("SELECT " + reference.getManyToMany().joinColumnId() + ", " + reference.getManyToMany().inverseJoinColumnId() + " FROM " + reference.getManyToMany().tableName() + " WHERE " + reference.getManyToMany().joinColumnId() + " IN (:ids)", Map.of("ids", ids), (JdbcTemplateCallback<Object[]>) (jdbcTemplate, sql, paramMap) -> jdbcTemplate.query(sql, paramMap, (rs, rowNum) -> new Object[]{rs.getObject(1, tableMeta.getIdMeta().getIdClass()), rs.getObject(2, referenceDAO.getTableMeta().getIdMeta().getIdClass())})
+                    List<Object[]> refTable = tableDAO.select("SELECT " + reference.getManyToMany().joinColumnId() + ", " + reference.getManyToMany().inverseJoinColumnId() + " FROM " + reference.getManyToMany().tableName() + " WHERE " + reference.getManyToMany().joinColumnId() + " IN (:ids)", Map.of("ids", ids), (jdbcTemplate, sql, paramMap) -> jdbcTemplate.query(sql, paramMap, (rs, rowNum) -> new Object[]{rs.getObject(1, tableMeta.getIdMeta().getIdClass()), rs.getObject(2, referenceDAO.getTableMeta().getIdMeta().getIdClass())})
                     );
 
                     final List<Object> mergedReferenceList = new ArrayList<>();
@@ -406,6 +407,14 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                             beanWrapper.setPropertyValue(reference.getField().getName(), null);
                         } else {
                             List<?> selectList = tableDAO.select(reference.getReferenceClass(), select.value(), params);
+                            if (CollectionUtils.isNotEmpty(selectList)) {
+                                Object selectObject = selectList.get(0);
+                                if (EntityId.class.isAssignableFrom(selectObject.getClass())) {
+                                    EntityDAO entityDAO = EntityDAOManager.getDAO(selectObject.getClass());
+                                    entityDAO.cascadeSelect(selectList);
+                                }
+                            }
+
                             Object value = Collection.class.isAssignableFrom(reference.getField().getType()) ? selectList : OperatorUtils.expectedAsOptional(selectList).orElse(null);
                             beanWrapper.setPropertyValue(reference.getField().getName(), value);
                         }
