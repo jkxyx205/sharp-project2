@@ -22,4 +22,11 @@ public @interface ManyToOne {
     boolean cascadeSelect() default true;
 
     boolean cascadeSave() default false;
+
+    /**
+     * TODO
+     * 指定目标实体的哪一列作为外键所引用的列（默认引用对方表的主键）
+     * @return
+     */
+    String referencedColumnName() default "";
 }

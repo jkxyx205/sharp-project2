@@ -25,4 +25,16 @@ public @interface ManyToMany {
     String joinColumnId();
 
     String inverseJoinColumnId();
+
+    /** TODO
+     * 指定目标实体的哪一列作为外键所引用的列（默认引用对方表的主键）
+     * @return
+     */
+    String joinReferencedColumnName() default "";
+
+    /** TODO
+     * 指定目标实体的哪一列作为外键所引用的列（默认引用对方表的主键）
+     * @return
+     */
+    String inverseJoinReferencedColumnName() default "";
 }
