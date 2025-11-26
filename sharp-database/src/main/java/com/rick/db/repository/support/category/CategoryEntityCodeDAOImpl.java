@@ -9,7 +9,10 @@ import jakarta.validation.constraints.NotNull;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -63,7 +66,7 @@ public class CategoryEntityCodeDAOImpl<T extends EntityIdCode<ID> & RowCategory<
             }
         }
 
-        insertOrUpdate(list, categoryColumnName, category.toString(), deleteItem, deletedIdsConsumer);
+        insertOrUpdate(list, categoryColumnName, getValue(category), deleteItem, deletedIdsConsumer);
     }
 
     @Override
@@ -73,7 +76,7 @@ public class CategoryEntityCodeDAOImpl<T extends EntityIdCode<ID> & RowCategory<
 
     @Override
     public T insert(T entity) {
-        if (exists("code = ? AND "+ categoryColumnName +" = ?", new Object[]{entity.getCode(), entity.getCategory().toString()})) {
+        if (exists("code = ? AND "+ categoryColumnName +" = ?", new Object[]{entity.getCode(), getValue(entity.getCategory())})) {
             throw new BizException("编号已经存在");
         }
         return insertOrUpdate0(entity, true);
@@ -81,18 +84,18 @@ public class CategoryEntityCodeDAOImpl<T extends EntityIdCode<ID> & RowCategory<
 
     @Override
     public T update(T entity) {
-        if (exists("id <> ? AND code = ? AND "+ categoryColumnName +" = ?", new Object[]{entity.getId(), entity.getCode(), entity.getCategory().toString()})) {
+        if (exists("id <> ? AND code = ? AND "+ categoryColumnName +" = ?", new Object[]{entity.getId(), entity.getCode(), getValue(entity.getCategory())})) {
             throw new BizException("编号已经存在");
         }
         return insertOrUpdate0(entity, false);
     }
 
     public Optional<T> selectByCategoryAndCode(@NotNull E category, @NotBlank String code) {
-        return OperatorUtils.expectedAsOptional(select("code = ? AND "+categoryColumnName+" = ?", code, category.toString()));
+        return OperatorUtils.expectedAsOptional(select("code = ? AND "+categoryColumnName+" = ?", code, getValue(category)));
     }
 
     public List<T> selectAll(@NotNull E category) {
-        return select(category + " = :category", Map.of(category, category.toString()));
+        return select(categoryColumnName + " = ?", getValue(category));
     }
 
     @Override
@@ -103,6 +106,14 @@ public class CategoryEntityCodeDAOImpl<T extends EntityIdCode<ID> & RowCategory<
                 t.setId(option.get().getId());
             }
         }
+    }
+
+    private Object getValue(E category) {
+        if (Enum.class.isAssignableFrom(category.getClass())) {
+            return category.toString();
+        }
+
+        return category;
     }
 
 //    private void fillEntityIdsByCodes(EntityCodeDAO<T, ID> entityCodeDAO, Collection<T> entities) {

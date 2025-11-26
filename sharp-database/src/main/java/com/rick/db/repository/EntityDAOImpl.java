@@ -739,7 +739,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
                             if (CollectionUtils.isEmpty(list) && reference.getOneToMany().cascadeSaveItemDelete()) {
                                 referenceDAO.delete(referenceColumnId + " = ?", idValue);
-                            } else {
+                            } else if (CollectionUtils.isNotEmpty(list)){
                                 if (reference.getOneToMany().cascadeSaveItemDelete()) {
                                     handlerReferenceListBefore(referenceDAO, list, referenceColumnId, idValue);
 
