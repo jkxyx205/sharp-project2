@@ -109,6 +109,11 @@ public class EntityCodeIdFillService {
             return id;
         }
         Optional<ID> optional = ((EntityCodeDAO) EntityDAOManager.getDAO(clazz)).selectIdByCode(code);
+
+        if (Objects.nonNull(clazz.getAnnotation(CodeFillUncheck.class))) {
+            return optional.orElse(null);
+        }
+
         return optional.orElseThrow(() -> new BizException("%s code %s 不存在", new Object[]{clazz.getAnnotation(Table.class).comment(), code}));
     }
 
