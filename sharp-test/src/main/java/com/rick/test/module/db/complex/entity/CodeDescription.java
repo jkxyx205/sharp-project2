@@ -46,7 +46,12 @@ public class CodeDescription extends BaseCodeDescriptionEntity<Long> implements 
         /**
          * 销售组织
          */
-        SALES_ORG("销售组织");
+        SALES_ORG("销售组织"),
+        /**
+         * 商品组
+         */
+        DIVISION("商品组")
+        ;
 
         @JsonValue
         public String getCode() {
