@@ -109,6 +109,10 @@ public class CategoryEntityCodeDAOImpl<T extends EntityIdCode<ID> & RowCategory<
     }
 
     private Object getValue(E category) {
+        if (Objects.isNull(category)) {
+            return "";
+        }
+
         if (Enum.class.isAssignableFrom(category.getClass())) {
             return category.toString();
         }

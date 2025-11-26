@@ -56,6 +56,13 @@ public class CodeDescriptionTest {
     }
 
     @Test
+    public void testSave5() {
+        codeDescriptionService.saveAll(CodeDescription.CategoryEnum.DIRECT_DISCOVERY, Arrays.asList(
+                CodeDescription.builder().code("0001").description("直发现场理由1").sort(0).build()
+        ));
+    }
+
+    @Test
     public void testByCode() {
         codeDescriptionDAO.update(CodeDescription.builder().code("M2").description("物料组-22").category(CodeDescription.CategoryEnum.MATERIAL).sort(0).build());
     }
