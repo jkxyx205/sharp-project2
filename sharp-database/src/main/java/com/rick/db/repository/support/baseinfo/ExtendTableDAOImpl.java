@@ -91,6 +91,11 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
         return super.select(addIsDeletedCondition(sql), paramMap, jdbcTemplateCallback);
     }
 
+    @Override
+    public List<Map<String, Object>> select(String sql, Object... args) {
+        return super.select(addIsDeletedCondition(sql), args);
+    }
+
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
         tableNameDAOMap =  EntityDAOManager.getAllEntityDAO().stream().collect(Collectors.toMap(entityDAO -> entityDAO.getTableMeta().getTableName(), Function.identity()));
