@@ -70,11 +70,6 @@ public class CategoryEntityCodeDAOImpl<T extends EntityIdCode<ID> & RowCategory<
     }
 
     @Override
-    public T insertOrUpdate(T entity) {
-        return super.insertOrUpdate(entity);
-    }
-
-    @Override
     public T insert(T entity) {
         if (exists("code = ? AND "+ categoryColumnName +" = ?", new Object[]{entity.getCode(), getValue(entity.getCategory())})) {
             throw new BizException("编号已经存在");
