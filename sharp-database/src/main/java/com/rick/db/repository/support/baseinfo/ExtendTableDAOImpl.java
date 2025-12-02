@@ -2,8 +2,6 @@ package com.rick.db.repository.support.baseinfo;
 
 import com.rick.db.repository.*;
 import com.rick.db.repository.support.SqlHelper;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -79,11 +77,6 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
     @Override
     public <E> List<E> select(Class<E> clazz, String sql, Object... args) {
         return super.select(clazz, addIsDeletedCondition(sql), args);
-    }
-
-    @Override
-    public <E> List<E> select(@NotNull Class<E> clazz, @NotBlank String sql, Map<String, Object> paramMap) {
-        return super.select(clazz, addIsDeletedCondition(sql), paramMap);
     }
 
     @Override
