@@ -2,8 +2,10 @@ package com.rick.common.util;
 
 import lombok.experimental.UtilityClass;
 
+import java.lang.reflect.Field;
 import java.time.temporal.Temporal;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -47,5 +49,20 @@ public class ObjectUtils {
         }
 
         return true;
+    }
+
+    public Map<String, Object> toMap(Object object) {
+        Map<String, Object> map = new HashMap<>();
+
+        for (Field field : object.getClass().getDeclaredFields()) {
+            field.setAccessible(true);
+            try {
+                map.put(field.getName(), field.get(object));
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return map;
     }
 }
