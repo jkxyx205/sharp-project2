@@ -938,9 +938,11 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
             return JsonUtils.toJson(value);
         }
 
-        EntityDAO entityDAO = EntityDAOManager.getDAO(vClass);
-        if (Objects.nonNull(entityDAO) && (Objects.nonNull(field.getAnnotation(ManyToOne.class)) || Objects.nonNull(field.getAnnotation(OneToMany.class)))) {
-            return getPropertyValue(value, entityDAO.getTableMeta().getIdMeta().getIdPropertyName());
+        if (com.rick.common.util.ObjectUtils.mayPureObject(value) && (Objects.nonNull(field.getAnnotation(ManyToOne.class)) || Objects.nonNull(field.getAnnotation(OneToMany.class)))) {
+            EntityDAO entityDAO = EntityDAOManager.getDAO(vClass);
+            if (Objects.nonNull(entityDAO)) {
+                return getPropertyValue(value, entityDAO.getTableMeta().getIdMeta().getIdPropertyName());
+            }
         } else if (Collection.class.isAssignableFrom(vClass)) {
             if (CollectionUtils.isEmpty((Collection<?>) value)) {
                 return "[]";
