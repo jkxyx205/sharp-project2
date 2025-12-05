@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * @author Rick.Xu
@@ -92,6 +93,11 @@ public class BaseServiceImpl<D extends EntityDAO<T, ID>, T extends EntityId<ID>,
     @Override
     public List<T> select(T example) {
         return baseDAO.select(example);
+    }
+
+    @Override
+    public List<T> select(T example, Predicate<String> nullColunmPredicate) {
+        return baseDAO.select(example, nullColunmPredicate);
     }
 
     @Override

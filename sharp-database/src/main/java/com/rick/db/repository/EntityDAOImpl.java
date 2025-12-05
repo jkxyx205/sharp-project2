@@ -36,6 +36,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -177,18 +178,29 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
             return selectAll();
         }
 
+        return select(getArgsFromEntity(example, true));
+    }
+
+    @Override
+    public List<T> select(T example, Predicate<String> nullColunmPredicate) {
         Map<String, Object> paramMap = new HashMap<>();
         StringBuilder conditionColumnBuilder = new StringBuilder();
+        StringBuilder conditionNullColumnBuilder = new StringBuilder();
 
         for (Map.Entry<Field, String> entry : tableMeta.getFieldColumnNameMap().entrySet()) {
             Object value = parsingColumnValue(entry.getKey(), entry.getValue(), getPropertyValue(example, tableMeta.getFieldPropertyNameMap().get(entry.getKey())));
             if (Objects.nonNull(value)) {
                 paramMap.put(tableMeta.getFieldPropertyNameMap().get(entry.getKey()), value);
                 conditionColumnBuilder.append(entry.getValue()).append(",");
+            } else {
+                if (nullColunmPredicate.test(entry.getValue()))
+                    conditionNullColumnBuilder.append(" AND ").append(entry.getValue()).append(" IS NULL");
             }
         }
 
-        return select(tableMeta.getEntityClass(), tableMeta.getSelectColumn(), tableMeta.appendColumnVar(conditionColumnBuilder.toString(), true, " AND "), paramMap);
+        String condition = tableMeta.appendColumnVar(conditionColumnBuilder.toString(), true, " AND ");
+        condition = StringUtils.isBlank(condition) ? conditionNullColumnBuilder.substring(5) : condition + conditionNullColumnBuilder;
+        return select(tableMeta.getEntityClass(), tableMeta.getSelectColumn(), condition, paramMap);
     }
 
     @Override

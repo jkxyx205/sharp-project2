@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * @author Rick.Xu
@@ -45,6 +46,14 @@ public interface EntityDAO<T, ID> {
     List<T> select(@NotBlank String columns, String condition, Map<String, Object> paramMap);
 
     List<T> select(T example);
+
+    /**
+     * null值会通过 is null 放到条件语句中
+     * @param example
+     * @param nullColunmPredicate
+     * @return
+     */
+    List<T> select(T example, Predicate<String> nullColunmPredicate);
 
     List<T> select(String condition, T example);
 
