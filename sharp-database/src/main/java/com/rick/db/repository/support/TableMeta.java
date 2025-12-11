@@ -5,7 +5,6 @@ import com.rick.db.config.Context;
 import com.rick.db.repository.*;
 import com.rick.db.repository.model.DatabaseType;
 import lombok.Getter;
-import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Field;
@@ -77,6 +76,16 @@ public class TableMeta<T> {
 
     public Field getFieldByPropertyName(String propertyName) {
         for (Map.Entry<Field, String> entry : fieldPropertyNameMap.entrySet()) {
+            if (Objects.equals(propertyName, entry.getValue())) {
+                return entry.getKey();
+            }
+        }
+
+        return null;
+    }
+
+    public String getColumnNameByPropertyName(String propertyName) {
+        for (Map.Entry<String, String> entry : columnPropertyNameMap.entrySet()) {
             if (Objects.equals(propertyName, entry.getValue())) {
                 return entry.getKey();
             }
@@ -170,20 +179,9 @@ public class TableMeta<T> {
         Select select;
     }
 
-    @Value
-    public static class IdMeta<ID> {
-
-        Class<ID> idClass;
-
-        Id id;
-
-        String idColumnName;
-
-        String idPropertyName;
-
-        Field idField;
-
-        public String getIdPropertyName() {
+    public record IdMeta<ID>(Class<ID> idClass, Id id, String idColumnName, String idPropertyName, Field idField) {
+        @Override
+        public String idPropertyName() {
             return idField.getName();
         }
     }
