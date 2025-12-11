@@ -1,18 +1,19 @@
 package com.rick.db.plugin;
 
+import com.rick.common.function.SFunction;
 import com.rick.db.repository.EntityDAO;
 import com.rick.db.repository.TableDAO;
 import com.rick.db.repository.model.EntityId;
+import com.rick.db.repository.model.EntityIdCode;
 import com.rick.db.repository.support.TableMeta;
+import com.rick.db.util.OperatorUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * @author Rick.Xu
@@ -293,5 +294,34 @@ public class BaseServiceImpl<D extends EntityDAO<T, ID>, T extends EntityId<ID>,
     @Override
     public Map<String, Object> entityToMap(T entity) {
         return baseDAO.entityToMap(entity);
+    }
+
+    public <S> Map<ID, S> getSinglePropertyByIds(Set<ID> ids, SFunction<T, S> function) {
+        List<T> list = baseDAO.selectWithoutCascade(baseDAO.getTableMeta().getEntityClass(), "id, " + obtainColumnName(function), "id IN (:ids)",
+                Map.of("ids", ids));
+
+        return list.stream().collect(Collectors.toMap(T::getId, e -> function.apply(e)));
+    }
+
+    public <S> Map<String, S> getSinglePropertyByCodes(Set<String> codes, SFunction<T, S> function) {
+        List<T> list = baseDAO.selectWithoutCascade(baseDAO.getTableMeta().getEntityClass(), "code, " + obtainColumnName(function), "code IN (:codes)",
+                Map.of("codes", codes));
+
+        return list.stream().collect(Collectors.toMap(t -> ((EntityIdCode)t).getCode(), e -> function.apply(e)));
+    }
+
+    public <S> S getSinglePropertyById(ID id, SFunction<T, S> function) {
+        List<T> list = baseDAO.selectWithoutCascade(baseDAO.getTableMeta().getEntityClass(), "id, " + obtainColumnName(function), "id = ?", id);
+        return function.apply(OperatorUtils.expectedAsOptional(list).get());
+    }
+
+    public <S> S getSinglePropertyByCode(String code, SFunction<T, S> function) {
+        List<T> list = baseDAO.selectWithoutCascade(baseDAO.getTableMeta().getEntityClass(), "code, " + obtainColumnName(function), "code = ?", code);
+        return function.apply(OperatorUtils.expectedAsOptional(list).get());
+    }
+
+    private <S> String obtainColumnName(SFunction<T, S> function) {
+        String propertyName = function.getPropertyName();
+        return baseDAO.getTableMeta().getColumnNameByPropertyName(propertyName);
     }
 }
