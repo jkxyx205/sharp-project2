@@ -80,12 +80,12 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
 
     @Override
     public Optional<ID> selectIdByCode(String code) {
-        return OperatorUtils.expectedAsOptional(select(getTableMeta().getIdMeta().getIdClass(), getTableMeta().getIdMeta().getIdPropertyName(), "code = :code", Map.of("code", code)));
+        return OperatorUtils.expectedAsOptional(select(getTableMeta().getIdMeta().idClass(), getTableMeta().getIdMeta().idPropertyName(), "code = :code", Map.of("code", code)));
     }
 
     @Override
     public List<ID> selectIdsByCodes(Collection<String> codes) {
-        return select(getTableMeta().getIdMeta().getIdClass(), getTableMeta().getIdMeta().getIdPropertyName(), "code IN (:codes)", Map.of("code", codes));
+        return select(getTableMeta().getIdMeta().idClass(), getTableMeta().getIdMeta().idPropertyName(), "code IN (:codes)", Map.of("code", codes));
     }
 
     @Override

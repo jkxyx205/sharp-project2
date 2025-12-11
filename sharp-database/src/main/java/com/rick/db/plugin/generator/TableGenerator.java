@@ -43,20 +43,20 @@ public abstract class TableGenerator {
         if (Objects.isNull(tableMeta.getIdMeta())) {
             strategy = Id.GenerationType.SEQUENCE;
         } else {
-            strategy =  tableMeta.getIdMeta().getId().strategy();
+            strategy =  tableMeta.getIdMeta().id().strategy();
         }
 
-        Field idField = tableMeta.getIdMeta().getIdField();
+        Field idField = tableMeta.getIdMeta().idField();
         Assert.notNull(idField, "cannot find id field, forgot to extends BaseEntity??");
         createTableSql.append(tableMeta.getTableName())
                 .append("(");
 
-        idColumnHandler(createTableSql, idField, tableMeta.getIdMeta().getIdColumnName(), strategy, tableMeta.getIdMeta().getIdClass());
+        idColumnHandler(createTableSql, idField, tableMeta.getIdMeta().idColumnName(), strategy, tableMeta.getIdMeta().idClass());
 
         List<String> columnNames = tableMeta.getSortedColumns();
 
         for (String columnName : columnNames) {
-            if (tableMeta.getIdMeta().getIdColumnName().equals(columnName) ) {
+            if (tableMeta.getIdMeta().idColumnName().equals(columnName) ) {
                 continue;
             }
 

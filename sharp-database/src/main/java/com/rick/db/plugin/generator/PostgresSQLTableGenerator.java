@@ -102,7 +102,7 @@ public class PostgresSQLTableGenerator extends TableGenerator {
         // 添加备注
         List<String> columnNames = tableMeta.getSortedColumns();
         for (String columnName : columnNames) {
-            if (tableMeta.getIdMeta().getIdColumnName().equals(columnName)) {
+            if (tableMeta.getIdMeta().idColumnName().equals(columnName)) {
                 createTableSql.append("comment on column " + tableMeta.getTableName() + "." + columnName + " is '主键';");
                 continue;
             }

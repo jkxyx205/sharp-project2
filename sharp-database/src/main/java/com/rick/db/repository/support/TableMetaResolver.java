@@ -126,7 +126,7 @@ public class TableMetaResolver {
                 tableMeta.getColumnPropertyNameMap().put(columnName, propertyName);
                 selectColumnBuilder.append(columnName + " AS \"" + propertyName + "\"").append(", ");
                 columnNameBuilder.append(columnName).append(", ");
-                if (!(Objects.nonNull(tableMeta.idMeta) && columnName.equals(tableMeta.idMeta.getIdPropertyName()) || Objects.nonNull(columnAnnotation) && !columnAnnotation.updatable())) {
+                if (!(Objects.nonNull(tableMeta.idMeta) && columnName.equals(tableMeta.idMeta.idPropertyName()) || Objects.nonNull(columnAnnotation) && !columnAnnotation.updatable())) {
                     updateColumnBuilder.append(columnName).append(", ");
                 }
 
