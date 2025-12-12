@@ -1,5 +1,6 @@
 package com.rick.db.repository;
 
+import com.rick.common.function.SFunction;
 import com.rick.common.http.exception.BizException;
 import com.rick.db.repository.model.EntityIdCode;
 import com.rick.db.repository.support.InsertUpdateCallback;
@@ -93,13 +94,30 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
         return selectForKeyValue("code, id", "code IN (:codes)", Map.of("codes", codes));
     }
 
+    @Override
+    public Optional<T> selectByCodeWithoutCascade(String code) {
+        return OperatorUtils.expectedAsOptional(selectWithoutCascade("code = ?", new Object[]{code}));
+    }
+
+    @Override
+    public <S> Map<String, S> getPropertyByCodes(Set<String> codes, SFunction<T, S> function) {
+        List<T> list = selectWithoutCascade(getTableMeta().getEntityClass(), "code, " + obtainColumnName(function), "code IN (:codes)",
+                Map.of("codes", codes));
+
+        return list.stream().collect(Collectors.toMap(t -> ((EntityIdCode) t).getCode(), e -> function.apply(e)));
+    }
+
+    @Override
+    public <S> S getPropertyByCode(String code, SFunction<T, S> function) {
+        List<T> list = selectWithoutCascade( "code, " + obtainColumnName(function), "code = ?", code);
+        return function.apply(OperatorUtils.expectedAsOptional(list).get());
+    }
 
     @Override
     protected void handlerReferenceListBefore(EntityDAO subTableEntityDAO, List<?> subDataList, String refColumnName, Object refValue) {
         if (subTableEntityDAO instanceof EntityCodeDAO && this != subTableEntityDAO) {
             fillEntityIdsByCodes((EntityCodeDAO) subTableEntityDAO, (Collection<T>) subDataList, refColumnName, refValue);
         }
-
     }
 
     protected void fillEntityIdByCode(T t) {

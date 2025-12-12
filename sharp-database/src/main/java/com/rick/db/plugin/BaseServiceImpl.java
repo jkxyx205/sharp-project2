@@ -4,16 +4,13 @@ import com.rick.common.function.SFunction;
 import com.rick.db.repository.EntityDAO;
 import com.rick.db.repository.TableDAO;
 import com.rick.db.repository.model.EntityId;
-import com.rick.db.repository.model.EntityIdCode;
 import com.rick.db.repository.support.TableMeta;
-import com.rick.db.util.OperatorUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * @author Rick.Xu
@@ -296,32 +293,29 @@ public class BaseServiceImpl<D extends EntityDAO<T, ID>, T extends EntityId<ID>,
         return baseDAO.entityToMap(entity);
     }
 
-    public <S> Map<ID, S> getSinglePropertyByIds(Set<ID> ids, SFunction<T, S> function) {
-        List<T> list = baseDAO.selectWithoutCascade(baseDAO.getTableMeta().getEntityClass(), "id, " + obtainColumnName(function), "id IN (:ids)",
-                Map.of("ids", ids));
-
-        return list.stream().collect(Collectors.toMap(T::getId, e -> function.apply(e)));
+    @Override
+    public Optional<T> selectByIdWithoutCascade(ID id) {
+        return baseDAO.selectByIdWithoutCascade(id);
     }
 
-    public <S> Map<String, S> getSinglePropertyByCodes(Set<String> codes, SFunction<T, S> function) {
-        List<T> list = baseDAO.selectWithoutCascade(baseDAO.getTableMeta().getEntityClass(), "code, " + obtainColumnName(function), "code IN (:codes)",
-                Map.of("codes", codes));
-
-        return list.stream().collect(Collectors.toMap(t -> ((EntityIdCode)t).getCode(), e -> function.apply(e)));
+    @Override
+    public <S> S getPropertyById(ID id, SFunction<T, S> function) {
+        return baseDAO.getPropertyById(id, function);
     }
 
-    public <S> S getSinglePropertyById(ID id, SFunction<T, S> function) {
-        List<T> list = baseDAO.selectWithoutCascade(baseDAO.getTableMeta().getEntityClass(), "id, " + obtainColumnName(function), "id = ?", id);
-        return function.apply(OperatorUtils.expectedAsOptional(list).get());
+    @Override
+    public <S> Map<ID, S> getPropertyByIds(Set<ID> ids, SFunction<T, S> function) {
+        return baseDAO.getPropertyByIds(ids, function);
     }
 
-    public <S> S getSinglePropertyByCode(String code, SFunction<T, S> function) {
-        List<T> list = baseDAO.selectWithoutCascade(baseDAO.getTableMeta().getEntityClass(), "code, " + obtainColumnName(function), "code = ?", code);
-        return function.apply(OperatorUtils.expectedAsOptional(list).get());
+    @Override
+    public List<T> selectWithoutCascade(String condition, Object... args) {
+        return baseDAO.selectWithoutCascade(condition, args);
     }
 
-    private <S> String obtainColumnName(SFunction<T, S> function) {
-        String propertyName = function.getPropertyName();
-        return baseDAO.getTableMeta().getColumnNameByPropertyName(propertyName);
+    @Override
+    public List<T> selectWithoutCascade(String columns, String condition, Object... args) {
+        return baseDAO.selectWithoutCascade(columns, condition, args);
     }
+
 }

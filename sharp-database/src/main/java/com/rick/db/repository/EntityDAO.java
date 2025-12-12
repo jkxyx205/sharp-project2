@@ -1,15 +1,13 @@
 package com.rick.db.repository;
 
+import com.rick.common.function.SFunction;
 import com.rick.db.repository.support.TableMeta;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -133,4 +131,13 @@ public interface EntityDAO<T, ID> {
 
     Map<String, Object> entityToMap(T entity);
 
+    Optional<T> selectByIdWithoutCascade(ID id);
+
+    <S> S getPropertyById(ID id, SFunction<T, S> function);
+
+    <S> Map<ID, S> getPropertyByIds(Set<ID> ids, SFunction<T, S> function);
+
+    List<T> selectWithoutCascade(String condition, Object... args);
+
+    List<T> selectWithoutCascade(String columns, String condition, Object... args);
 }

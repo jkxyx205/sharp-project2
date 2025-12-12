@@ -1,6 +1,7 @@
 package com.rick.db.repository;
 
 import com.google.common.collect.Sets;
+import com.rick.common.function.SFunction;
 import com.rick.common.util.ClassUtils;
 import com.rick.common.util.EnumUtils;
 import com.rick.common.util.IdGenerator;
@@ -863,6 +864,39 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     @Override
     public int update(String columns, String condition, T example) {
         return update(columns, condition, getArgsFromEntity(example, true));
+    }
+
+    @Override
+    public Optional<T> selectByIdWithoutCascade(ID id) {
+        return OperatorUtils.expectedAsOptional(selectWithoutCascade("id = ?", new Object[]{id}));
+    }
+
+    @Override
+    public <S> Map<ID, S> getPropertyByIds(Set<ID> ids, SFunction<T, S> function) {
+        List<T> list = selectWithoutCascade(tableMeta.getEntityClass(), "id, " + obtainColumnName(function), "id IN (:ids)",
+                Map.of("ids", ids));
+
+        return list.stream().collect(Collectors.toMap(t -> getIdValue(t), e -> function.apply(e)));
+    }
+
+    @Override
+    public <S> S getPropertyById(ID id, SFunction<T, S> function) {
+        List<T> list = selectWithoutCascade( "id, " + obtainColumnName(function), "id = ?", id);
+        return function.apply(OperatorUtils.expectedAsOptional(list).get());
+    }
+
+    public List<T> selectWithoutCascade(String condition, Object... args) {
+        return selectWithoutCascade(tableMeta.getSelectColumn(), condition, args);
+    }
+
+    public List<T> selectWithoutCascade(String columns, String condition, Object... args) {
+        List<T> materialList = selectWithoutCascade(tableMeta.getEntityClass(), columns, condition, args);
+        return materialList;
+    }
+
+    protected  <S> String obtainColumnName(SFunction<T, S> function) {
+        String propertyName = function.getPropertyName();
+        return tableMeta.getColumnNameByPropertyName(propertyName);
     }
 
     private void setIdValue(Object entity, Object id) {
