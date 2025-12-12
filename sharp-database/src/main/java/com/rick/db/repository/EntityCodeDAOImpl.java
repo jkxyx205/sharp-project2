@@ -104,7 +104,7 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
         List<T> list = selectWithoutCascade(getTableMeta().getEntityClass(), "code, " + obtainColumnName(function), "code IN (:codes)",
                 Map.of("codes", codes));
 
-        return list.stream().collect(Collectors.toMap(t -> ((EntityIdCode) t).getCode(), e -> function.apply(e)));
+        return list.stream().collect(Collectors.toMap(t -> t.getCode(), e -> function.apply(e)));
     }
 
     @Override

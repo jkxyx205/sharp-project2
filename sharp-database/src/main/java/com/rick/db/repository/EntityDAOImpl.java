@@ -896,7 +896,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
     protected  <S> String obtainColumnName(SFunction<T, S> function) {
         String propertyName = function.getPropertyName();
-        return tableMeta.getColumnNameByPropertyName(propertyName);
+        return tableMeta.getColumnNameByPropertyName(propertyName) + " AS \""+propertyName+"\"";
     }
 
     private void setIdValue(Object entity, Object id) {
