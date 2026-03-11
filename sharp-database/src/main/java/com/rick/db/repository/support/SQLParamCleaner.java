@@ -96,10 +96,22 @@ public class SQLParamCleaner {
         DATE_FORMAT_MAP.put("\\d{4}-\\d{2}-\\d{2}", "yyyy-MM-dd");
     }
 
+    public static FormatParam formatSql(String srcSql, Map<String, Object> params) {
+        return formatSql(srcSql, params, false);
+    }
+
+    public static FormatParam formatSql(String srcSql, Map<String, Object> params, boolean isSetIsNull) {
+        Map<String, Object> formatMap = new HashMap<>();
+        String formatSql = formatSql(srcSql, params, formatMap, isSetIsNull);
+        return new FormatParam(formatSql, formatMap);
+    }
+
+    @Deprecated
     public static String formatSql(String srcSql, Map<String, Object> params, Map<String, Object> formatMap) {
         return formatSql(srcSql, params, formatMap, false);
     }
 
+    @Deprecated
     public static String formatSql(String srcSql, Map<String, Object> params, Map<String, Object> formatMap, boolean isSetIsNull) {
         srcSql = normalizeSqlParams(srcSql);
 
@@ -450,17 +462,22 @@ public class SQLParamCleaner {
         String leftRegex = condition + "(?s)((?i)(\\s+(and|or))|(\\s*,))?";
         String firstWhereCondition = "(?s).*((?i)where)\\s+" + condition + ".*";
         String firstSetCondition = "(?s).*((?i)set)\\s+" + condition + ".*";
+        // 判断条件是否出现在片段开头（前面没有 WHERE/SET，也没有 AND/OR）
+        String firstBareCondition = "(?s)^\\s*" + condition + ".*";
 
         if (srcSql.matches(firstSetCondition)) {
             return srcSql.replaceAll(leftRegex, "");
-        }  else if(srcSql.matches(firstWhereCondition)) {
+        } else if (srcSql.matches(firstWhereCondition)) {
             if (isOnlyCause(srcSql, condition)) {
                 return srcSql.replaceAll("(?i)(where)?\\s*" + condition + "", "");
             }
 
             return srcSql.replaceAll(leftRegex, "");
+        } else if (srcSql.matches(firstBareCondition)) {
+            // ← 新增：纯条件片段，且是第一个条件
+            // 删除条件本身 + 后面的 AND/OR
+            return srcSql.replaceAll(leftRegex, "");
         }
-
 
         return  srcSql.replaceAll(rightRegex, "");
     }
@@ -507,5 +524,8 @@ public class SQLParamCleaner {
 
         matcher.appendTail(sb);
         return sb.toString();
+    }
+
+    public record FormatParam(String formatSql, Map<String, Object> formatMap) {
     }
 }
