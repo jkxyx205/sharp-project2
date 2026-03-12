@@ -7,5 +7,6 @@ dependencies {
     api 'commons-codec:commons-codec'
     api(libs.guava)
     api(libs.collections4)
+    api(libs.commons.io)
     compileOnlyApi 'org.projectlombok:lombok'
 }
