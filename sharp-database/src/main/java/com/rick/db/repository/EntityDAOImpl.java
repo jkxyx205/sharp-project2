@@ -29,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.util.Assert;
 import org.springframework.validation.annotation.Validated;
 
 import java.lang.reflect.Field;
@@ -108,6 +109,22 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
+    public <S> Optional<S> selectById(ID id, String columnName, Class<S> clazz) {
+        Assert.notNull(id, "id cannot be null");
+        Assert.hasText(columnName, "columnName cannot be null");
+        List<S> values = select(clazz, columnName, tableMeta.getIdMeta().idColumnName() + " = ?", id);
+        return OperatorUtils.expectedAsOptional(values);
+    }
+
+    @Override
+    public <S> List<S> selectByIds(Collection<ID> ids, String columnName, Class<S> clazz){
+        Assert.notEmpty(ids, "id cannot be null");
+        Assert.hasText(columnName, "columnName cannot be null");
+        List<S> values = select(clazz, columnName, tableMeta.getIdMeta().idColumnName() + " IN (:ids)", Map.of("ids", ids));
+        return values;
+    }
+
+    @Override
     public <K, V> Map<K, V> selectForKeyValue(String columns, String condition, Map<String, Object> paramMap) {
         return tableDAO.selectForKeyValue(tableMeta.getSelectSQL(columns) + SqlHelper.buildWhere(condition), paramMap);
     }
@@ -119,9 +136,11 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
     @Override
     public List<T> select(Map<String, Object> paramMap) {
-        Map<String, Object> formatMap = new HashMap<>();
-        String sql = SQLParamCleaner.formatSql(tableMeta.getSelectConditionSQL(), paramMap, formatMap);
-        return select(tableMeta.getEntityClass(), sql, formatMap);
+//        Map<String, Object> formatMap = new HashMap<>();
+//        String sql = SQLParamCleaner.formatSql(tableMeta.getSelectConditionSQL(), paramMap, formatMap);
+
+        SQLParamCleaner.FormatParam formatParam = SQLParamCleaner.formatSql(tableMeta.getSelectConditionSQL(), paramMap);
+        return select(tableMeta.getEntityClass(), formatParam.formatSql(), formatParam.formatMap());
     }
 
     @Override
