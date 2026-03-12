@@ -1,0 +1,59 @@
+package com.rick.fileupload.client.support;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.rick.db.repository.Column;
+import com.rick.db.repository.Embedded;
+import com.rick.db.repository.Id;
+import com.rick.db.repository.Table;
+import com.rick.db.repository.model.BaseEntityInfo;
+import com.rick.db.repository.model.BaseEntityInfoGetter;
+import com.rick.fileupload.core.model.FileMeta;
+import jakarta.validation.Valid;
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+import static com.rick.db.repository.support.Constants.LOGIC_DELETE_COLUMN_NAME;
+
+/**
+ * @author Rick
+ * @createdAt 2021-09-29 18:11:00
+ */
+@Table("sys_document")
+@Data
+public class Document extends FileMeta implements BaseEntityInfoGetter {
+
+    @Valid
+    @Embedded
+    BaseEntityInfo baseEntityInfo;
+
+    @Id
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long id;
+
+    @Column(updatable = false, comment = "创建人")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private Long createBy;
+
+    @Column(updatable = false, comment = "创建时间")
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private LocalDateTime createTime;
+
+    @Column(comment = "更新人")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private Long updateBy;
+
+    @Column(comment = "更新时间")
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private LocalDateTime updateTime;
+
+    @JsonIgnore
+    @Column(value = LOGIC_DELETE_COLUMN_NAME, comment = "是否逻辑删除")
+    private Boolean deleted;
+
+}

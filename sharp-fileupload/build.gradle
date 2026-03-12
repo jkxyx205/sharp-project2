@@ -1,0 +1,18 @@
+group = 'com.rick.fileupload'
+version = libs.versions.sharp.get()
+description = 'sharp-fileupload'
+
+dependencies {
+//    api project(':sharp-common')
+    implementation project(":sharp-database")
+    api(libs.okhttp3)
+    implementation(libs.thumbnailator)
+    implementation(libs.minio)
+    compileOnly(libs.aliyun.oss)
+    compileOnly(libs.fastdfs)
+    compileOnly(libs.mysql)
+
+    // pdf处理
+    compileOnly(libs.pdfbox)
+    compileOnly(libs.itext)
+}
