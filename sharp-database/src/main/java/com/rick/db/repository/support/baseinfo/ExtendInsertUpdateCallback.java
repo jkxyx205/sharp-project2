@@ -9,6 +9,8 @@ import com.rick.db.repository.support.InsertUpdateCallback;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+import static com.rick.db.repository.support.Constants.*;
+
 /**
  * @author Rick.Xu
  * @date 2025/11/17 13:18
@@ -19,11 +21,11 @@ public class ExtendInsertUpdateCallback implements InsertUpdateCallback<BaseEnti
     public void handler(boolean insert, BaseEntityInfoGetter baseEntityInfoGetter, Map<String, Object> args) {
         BaseEntityInfo baseEntityInfo = new BaseEntityInfo();
         if (insert) {
-            baseEntityInfo.setCreateBy((Long) args.get("create_by"));
-            baseEntityInfo.setCreateTime((LocalDateTime) args.get("create_time"));
-            baseEntityInfo.setUpdateBy((Long) args.get("update_by"));
-            baseEntityInfo.setUpdateTime((LocalDateTime) args.get("update_time"));
-            baseEntityInfo.setDeleted((Boolean) args.get("is_deleted"));
+            baseEntityInfo.setCreateBy((Long) args.get(CREATE_ID_COLUMN_NAME));
+            baseEntityInfo.setCreateTime((LocalDateTime) args.get(CREATE_TIME_COLUMN_NAME));
+            baseEntityInfo.setUpdateBy((Long) args.get(UPDATE_ID_COLUMN_NAME));
+            baseEntityInfo.setUpdateTime((LocalDateTime) args.get(UPDATE_TIME_COLUMN_NAME));
+            baseEntityInfo.setDeleted((Boolean) args.get(LOGIC_DELETE_COLUMN_NAME));
         } else {
             baseEntityInfo.setCreateBy((Long) args.get("baseEntityInfo.createBy"));
             baseEntityInfo.setCreateTime((LocalDateTime) args.get("baseEntityInfo.createTime"));

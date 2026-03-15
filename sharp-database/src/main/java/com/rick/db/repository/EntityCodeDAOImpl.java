@@ -18,6 +18,8 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static com.rick.db.repository.support.Constants.CODE_COLUMN_NAME;
+
 /**
  * @author Rick.Xu
  * @date 2025/8/20 14:05
@@ -88,7 +90,7 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
 
     @Override
     public Optional<T> selectByCode(String code) {
-        return OperatorUtils.expectedAsOptional(select("code = :code", Map.of("code", code)));
+        return OperatorUtils.expectedAsOptional(select(CODE_COLUMN_NAME + " = :code", Map.of("code", code)));
     }
 
     @Override
@@ -98,12 +100,12 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
 
     @Override
     public Optional<ID> selectIdByCode(String code) {
-        return OperatorUtils.expectedAsOptional(select(getTableMeta().getIdMeta().idClass(), getTableMeta().getIdMeta().idPropertyName(), "code = :code", Map.of("code", code)));
+        return OperatorUtils.expectedAsOptional(select(getTableMeta().getIdMeta().idClass(), getTableMeta().getIdMeta().idPropertyName(), CODE_COLUMN_NAME + " = :code", Map.of("code", code)));
     }
 
     @Override
     public List<ID> selectIdsByCodes(Collection<String> codes) {
-        return select(getTableMeta().getIdMeta().idClass(), getTableMeta().getIdMeta().idPropertyName(), "code IN (:codes)", Map.of("code", codes));
+        return select(getTableMeta().getIdMeta().idClass(), getTableMeta().getIdMeta().idPropertyName(), CODE_COLUMN_NAME + " IN (:codes)", Map.of("code", codes));
     }
 
     @Override

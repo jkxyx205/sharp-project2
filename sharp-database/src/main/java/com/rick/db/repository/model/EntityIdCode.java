@@ -12,6 +12,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.hibernate.validator.constraints.Length;
 
+import static com.rick.db.repository.support.Constants.CODE_COLUMN_NAME;
+
 /**
  * @author Rick.Xu
  * @date 2025/8/14 11:46
@@ -26,7 +28,7 @@ public class EntityIdCode<ID> extends EntityId<ID> {
     @Length(max = 32, message = "编号不能超过32个字符")
 //    @NotBlank
     @Pattern(regexp = "^[0-9a-zA-Z_#/%-]{0,}$", message = "CODE只能包含数字、字母、下划线、中划线")
-    @Column(value = "code", comment = "外部可见，唯一code", nullable = false)
+    @Column(value = CODE_COLUMN_NAME, comment = "外部可见，唯一code", nullable = false)
     private String code;
 
     @Override

@@ -18,6 +18,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.rick.db.repository.support.Constants.*;
+
 /**
  * @author Rick.Xu
  * @date 2025/8/27 21:17
@@ -71,7 +73,7 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
     @Override
     public int delete(String tableName, String condition, Object... args) {
         if (Objects.nonNull(tableNameDAOMap.get(tableName))) {
-            return update(tableName, "is_deleted = ?", condition + " AND is_deleted = false", ArrayUtils.addAll(new Object[]{true}, args));
+            return update(tableName, LOGIC_DELETE_COLUMN_NAME + " = ?", condition + " AND "+LOGIC_DELETE_COLUMN_NAME+" = false", ArrayUtils.addAll(new Object[]{true}, args));
         } else {
             return super.delete(tableName, condition, args);
         }
@@ -82,7 +84,7 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
         if (Objects.nonNull(tableNameDAOMap.get(tableName))) {
             Map<String, Object> mergedParamMap = new HashMap<>(paramMap);
             mergedParamMap.put("deleted", true);
-            return update(tableName, "is_deleted = :deleted", condition + " AND is_deleted = false", mergedParamMap);
+            return update(tableName, LOGIC_DELETE_COLUMN_NAME + " = :deleted", condition + " AND "+LOGIC_DELETE_COLUMN_NAME+" = false", mergedParamMap);
         } else {
             return super.delete(tableName, condition, paramMap);
         }
@@ -113,13 +115,13 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
             LocalDateTime now = LocalDateTime.now();
             long userId = getUserId();
 
-            paramMap.put("create_by", userId);
-            paramMap.put("create_time", now);
-            paramMap.put("update_by", userId);
-            paramMap.put("update_time", now);
+            paramMap.put(CREATE_ID_COLUMN_NAME, userId);
+            paramMap.put(CREATE_TIME_COLUMN_NAME, now);
+            paramMap.put(UPDATE_ID_COLUMN_NAME, userId);
+            paramMap.put(UPDATE_TIME_COLUMN_NAME, now);
         }
 
-        paramMap.put("is_deleted", false);
+        paramMap.put(LOGIC_DELETE_COLUMN_NAME, false);
         addInsertInfo(paramMap);
         return paramMap;
     }
@@ -158,7 +160,7 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
             }
             // 在 WHERE 子句中加 AND is_deleted = false
             return new StringBuilder(trimmedSql)
-                    .insert(insertPos, " AND is_deleted = false ")
+                    .insert(insertPos, " AND "+LOGIC_DELETE_COLUMN_NAME+" = false ")
                     .toString();
         } else {
             // 没有 WHERE，插入 WHERE is_deleted = false
@@ -167,7 +169,7 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
                 insertPos = clauseMatcher.start();
             }
             return new StringBuilder(trimmedSql)
-                    .insert(insertPos, " WHERE is_deleted = false ")
+                    .insert(insertPos, " WHERE "+LOGIC_DELETE_COLUMN_NAME+" = false ")
                     .toString();
         }
     }
