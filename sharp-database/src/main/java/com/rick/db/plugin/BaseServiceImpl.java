@@ -238,13 +238,13 @@ public class BaseServiceImpl<D extends EntityDAO<T, ID>, T extends EntityId<ID>,
     }
 
     @Override
-    public Collection<T> insertOrUpdate(Collection<T> entityList, String refColumnName, Object refValue) {
-        return baseDAO.insertOrUpdate(entityList, refColumnName, refValue);
+    public Collection<T> insertOrUpdateTable(Collection<T> entityList, String refColumnName, Object refValue) {
+        return baseDAO.insertOrUpdateTable(entityList, refColumnName, refValue);
     }
 
     @Override
-    public Collection<T> insertOrUpdate(Collection<T> entityList, String refColumnName, Object refValue, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer) {
-        return insertOrUpdate(entityList, refColumnName, refValue, deleteItem, deletedIdsConsumer);
+    public Collection<T> insertOrUpdateTable(Collection<T> entityList, String refColumnName, Object refValue, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer) {
+        return baseDAO.insertOrUpdateTable(entityList, refColumnName, refValue, deleteItem, deletedIdsConsumer);
     }
 
     @Override

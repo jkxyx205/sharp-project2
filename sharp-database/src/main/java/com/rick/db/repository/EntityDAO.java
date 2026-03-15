@@ -120,11 +120,11 @@ public interface EntityDAO<T, ID> {
 
     Collection<T> insertOrUpdateTable(Collection<T> entityList);
 
+    Collection<T> insertOrUpdateTable(Collection<T> entityList, @NotNull String refColumnName, @NotNull Object refValue);
+
     Collection<T> insertOrUpdateTable(Collection<T> entityList, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer);
 
-    Collection<T> insertOrUpdate(Collection<T> entityList, @NotNull String refColumnName, @NotNull Object refValue);
-
-    Collection<T> insertOrUpdate(Collection<T> entityList, @NotNull String refColumnName, @NotNull Object refValue, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer);
+    Collection<T> insertOrUpdateTable(Collection<T> entityList, @NotNull String refColumnName, @NotNull Object refValue, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer);
 
     int update(@NotBlank String columns, String condition, Object... args);
 

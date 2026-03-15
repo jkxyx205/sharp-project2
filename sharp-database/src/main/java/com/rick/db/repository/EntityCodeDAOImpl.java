@@ -65,9 +65,9 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
     }
 
     @Override
-    protected Collection<T> insertOrUpdate0(Collection<T> entityList, String refColumnName, Object refValue, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer) {
+    public Collection<T> insertOrUpdateTable(Collection<T> entityList, String refColumnName, Object refValue, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer) {
         fillEntityIdsByCodes(this, entityList, refColumnName, refValue);
-        return super.insertOrUpdate0(entityList, refColumnName, refValue, deleteItem, deletedIdsConsumer);
+        return super.insertOrUpdateTable(entityList, refColumnName, refValue, deleteItem, deletedIdsConsumer);
     }
 
     @Override

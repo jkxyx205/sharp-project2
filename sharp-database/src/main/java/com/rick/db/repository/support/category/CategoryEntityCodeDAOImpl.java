@@ -66,7 +66,7 @@ public class CategoryEntityCodeDAOImpl<T extends EntityIdCode<ID> & RowCategory<
             }
         }
 
-        insertOrUpdate(list, categoryColumnName, getValue(category), deleteItem, deletedIdsConsumer);
+        insertOrUpdateTable(list, categoryColumnName, getValue(category), deleteItem, deletedIdsConsumer);
     }
 
     @Override

@@ -12,6 +12,7 @@ import com.rick.db.repository.model.EntityId;
 import com.rick.db.repository.support.*;
 import com.rick.db.util.OperatorUtils;
 import jakarta.annotation.Resource;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -555,39 +556,17 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
+    public Collection<T> insertOrUpdateTable(Collection<T> entityList, @NotNull String refColumnName, @NotNull Object refValue) {
+        return insertOrUpdateTable(entityList,  true, null);
+    }
+
+    @Override
     public Collection<T> insertOrUpdateTable(Collection<T> entityList, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer) {
-        return insertOrUpdate0(entityList, null, null, deleteItem, deletedIdsConsumer);
+        return insertOrUpdateTable(entityList, null, null, deleteItem, deletedIdsConsumer);
     }
 
     @Override
-    public Collection<T> insertOrUpdate(Collection<T> entityList, String refColumnName, Object refValue) {
-        return insertOrUpdate(entityList, refColumnName, refValue, true, null);
-    }
-
-    @Override
-    public Collection<T> insertOrUpdate(Collection<T> entityList, String refColumnName, Object refValue, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer) {
-        return insertOrUpdate0(entityList, refColumnName, refValue, deleteItem, deletedIdsConsumer);
-    }
-
-    private Collection<ID> resolveDeletedIds(Collection<?> entityList, List<ID> idInDbList) {
-        if (CollectionUtils.isEmpty(entityList)) {
-            return idInDbList;
-        }
-
-        Set<ID> deletedIds = Sets.newHashSetWithExpectedSize(idInDbList.size());
-        if (CollectionUtils.isNotEmpty(idInDbList)) {
-            List<ID> idUpdateList = entityList.stream().map(this::getIdValue).collect(Collectors.toList());
-            for (ID idInDb : idInDbList) {
-                if (!idUpdateList.contains(idInDb)) {
-                    deletedIds.add(idInDb);
-                }
-            }
-        }
-
-        return deletedIds;
-    }
-
-    protected Collection<T> insertOrUpdate0(Collection<T> entityList, String refColumnName, Object refValue, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer) {
+    public Collection<T> insertOrUpdateTable(Collection<T> entityList, String refColumnName, Object refValue, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer) {
         if (deleteItem && Objects.nonNull(deletedIdsConsumer)) {
             // 检查 id 是否允许被删除
             Collection<ID> deletedIds = resolveDeletedIds(entityList, select(tableMeta.getIdMeta().idClass(), tableMeta.getIdMeta().idPropertyName(), refColumnName + " = :refValue", Map.of("refValue", refValue)));
@@ -629,6 +608,24 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
         }
 
         return entityList;
+    }
+
+    private Collection<ID> resolveDeletedIds(Collection<?> entityList, List<ID> idInDbList) {
+        if (CollectionUtils.isEmpty(entityList)) {
+            return idInDbList;
+        }
+
+        Set<ID> deletedIds = Sets.newHashSetWithExpectedSize(idInDbList.size());
+        if (CollectionUtils.isNotEmpty(idInDbList)) {
+            List<ID> idUpdateList = entityList.stream().map(this::getIdValue).collect(Collectors.toList());
+            for (ID idInDb : idInDbList) {
+                if (!idUpdateList.contains(idInDb)) {
+                    deletedIds.add(idInDb);
+                }
+            }
+        }
+
+        return deletedIds;
     }
 
     @Override

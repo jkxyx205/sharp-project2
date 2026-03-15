@@ -61,7 +61,7 @@ public class CategoryEntityDAOImpl<T extends EntityId<ID> & RowCategory<E>, ID, 
             }
         }
 
-        insertOrUpdate(list, categoryColumnName, getValue(category), deleteItem, deletedIdsConsumer);
+        insertOrUpdateTable(list, categoryColumnName, getValue(category), deleteItem, deletedIdsConsumer);
     }
 
     public List<T> selectAll(@NotNull E category) {
