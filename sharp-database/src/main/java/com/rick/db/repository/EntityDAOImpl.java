@@ -1,5 +1,6 @@
 package com.rick.db.repository;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.rick.common.function.SFunction;
 import com.rick.common.util.ClassUtils;
@@ -12,7 +13,6 @@ import com.rick.db.repository.model.EntityId;
 import com.rick.db.repository.support.*;
 import com.rick.db.util.OperatorUtils;
 import jakarta.annotation.Resource;
-import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -545,7 +545,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
-    public Collection<T> insertOrUpdateTable(Collection<T> entityList, @NotNull String refColumnName, @NotNull Object refValue) {
+    public Collection<T> insertOrUpdateTable(Collection<T> entityList, String refColumnName, Object refValue) {
         return insertOrUpdateTable(entityList,  true, null);
     }
 
@@ -654,10 +654,151 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
         return entity;
     }
 
+    @Override
+    public int[] insertOrUpdate(List<Map<String, Object>> paramMap) {
+        // TODO
+        return new int[0];
+    }
+
+    @Override
+    public T insertWithoutCascade(T entity) {
+//        tableDAO.insert(tableMeta.getTableName(), tableMeta.getColumnNames(), entityToMap(entity));
+        insertOrUpdate0(entity, true, false);
+        return entity;
+    }
+
+    @Override
+    public T updateWithoutCascade(T entity) {
+//        tableDAO.update(tableMeta.getTableName(), tableMeta.getColumnNames(), tableMeta.getIdMeta().idColumnName() + " = ?",  entityToMap(entity));
+        insertOrUpdate0(entity, false, false);
+        return entity;
+    }
+
+    @Override
+    public Collection<T> insertWithoutCascade(Collection<T> entityList) {
+        if (CollectionUtils.isNotEmpty(entityList)) {
+            List<Object[]> paramsList = Lists.newArrayListWithExpectedSize(entityList.size());
+
+            String[] columnNameArray = tableMeta.getColumnNameArray();
+            for (T entity : entityList) {
+                Object[] params = tableMeta.getIdMeta().id().strategy() == Id.GenerationType.IDENTITY ?  new Object[columnNameArray.length - 1] : new Object[columnNameArray.length];
+
+                int paramIndex = 0;
+
+                for (int i = 0; i < columnNameArray.length; i++) {
+                    String columnName = columnNameArray[i];
+                    Object propertyValue = getPropertyValue(entity, tableMeta.getColumnPropertyNameMap().get(columnName));
+
+                    if (Objects.equals(tableMeta.getIdMeta().idColumnName(), columnName)) {
+                        if (tableMeta.getIdMeta().id().strategy() == Id.GenerationType.IDENTITY) {
+                            continue;
+                        } else if (tableMeta.getIdMeta().id().strategy() == Id.GenerationType.SEQUENCE) {
+                            params[paramIndex] = IdGenerator.getSequenceId();
+                            setIdValue(entity, params[i]);
+                        } else {
+                            params[paramIndex] = propertyValue;
+                        }
+                    } else postgresParamsHandler(entity, params, paramIndex, columnName, propertyValue);
+
+                    paramIndex++;
+                }
+
+                paramsList.add(params);
+            }
+
+            if (tableMeta.getIdMeta().id().strategy() == Id.GenerationType.IDENTITY) {
+                tableMeta.getColumnNameArray();
+
+                String withoutIdColumn = Arrays.stream(tableMeta.getColumnNameArray())
+                        .filter(s -> !tableMeta.getIdMeta().idColumnName().equals(s))
+                        .collect(Collectors.joining(", "));
+
+                List<Object> ids = tableDAO.batchInsert(tableMeta.getTableName(), withoutIdColumn, tableMeta.appendColumnVar(withoutIdColumn, false, ", ", false), paramsList);
+                if (entityList instanceof List) {
+                    List<T> list = (List<T>) entityList;
+                    for (int i = 0; i < list.size(); i++) {
+                        setIdValue(list.get(i), ids.get(i));
+                    }
+                }
+            } else {
+                String insertSQL = SqlHelper.getInsertSQL(tableMeta.getTableName(), tableMeta.getColumnNames(), tableMeta.appendColumnVar(tableMeta.getColumnNames(), false, ", ", false));
+                tableDAO.getNamedParameterJdbcTemplate().getJdbcTemplate().batchUpdate(insertSQL, paramsList);
+            }
+        }
+
+        return entityList;
+    }
+
+    @Override
+    public Collection<T> updateWithoutCascade(Collection<T> entityList) {
+        if (CollectionUtils.isNotEmpty(entityList)) {
+            List<Object[]> paramsList = Lists.newArrayListWithExpectedSize(entityList.size());
+
+            String[] updateColumnArray = tableMeta.getUpdateColumn().split(COLUMN_NAME_SEPARATOR_REGEX);
+
+            for (T entity : entityList) {
+                Object[] params = new Object[updateColumnArray.length + 1];
+
+                int paramIndex = 0;
+
+                for (int i = 0; i < updateColumnArray.length; i++) {
+                    String columnName = updateColumnArray[i];
+                    Object propertyValue = getPropertyValue(entity, tableMeta.getColumnPropertyNameMap().get(columnName));
+                    postgresParamsHandler(entity, params, paramIndex, columnName, propertyValue);
+                    paramIndex++;
+                }
+
+                // id 放到最后一个参数
+                params[updateColumnArray.length] = getIdValue(entity);
+                paramsList.add(params);
+            }
+
+            tableDAO.batchUpdate(tableMeta.getTableName(),
+                    tableMeta.appendColumnVar(tableMeta.getUpdateColumn(), false),
+                    tableMeta.getIdMeta().idColumnName() + " = ?",
+                    paramsList);
+        }
+
+        return entityList;
+    }
+
+    private void postgresParamsHandler(T entity, Object[] params, int paramIndex, String columnName, Object propertyValue) {
+        if (Context.getDialect().getType() == DatabaseType.PostgreSQL) {
+            Column annotation = tableMeta.getColumnNameMap().get(columnName);
+            if (Objects.nonNull(annotation)) {
+                if ("json".equals(annotation.columnDefinition())) {
+                    params[paramIndex] = postgresJsonHandler("json", propertyValue);
+                } else if ("jsonb".equals(annotation.columnDefinition())) {
+                    params[paramIndex] = postgresJsonHandler("jsonb", tableMeta.getColumnPropertyNameMap().get(columnName));
+                } else {
+                    params[paramIndex] = getPropertyValue(entity, tableMeta.getColumnPropertyNameMap().get(columnName));
+                }
+            } else {
+                params[paramIndex] = propertyValue;
+            }
+        } else {
+            params[paramIndex] = propertyValue;
+        }
+    }
+
+    @Override
+    public Collection<T> insertOrUpdateWithoutCascade(Collection<T> entityList) {
+        if (CollectionUtils.isNotEmpty(entityList)) {
+            insertWithoutCascade(entityList.stream().filter(t -> Objects.nonNull(getIdValue(t))).collect(Collectors.toList()));
+            updateWithoutCascade(entityList.stream().filter(t -> Objects.isNull(getIdValue(t))).collect(Collectors.toList()));
+        }
+
+        return entityList;
+    }
+
     protected T insertOrUpdate0(T entity, boolean insert) {
+        return insertOrUpdate0(entity, insert, true);
+    }
+
+    protected T insertOrUpdate0(T entity, boolean insert, boolean cascade) {
         return watchSelect(() -> {
             threadLocalEntity.get().add(entity);
-            if (hasSaveReference()) {
+            if (cascade && hasSaveReference()) {
                 for (Map.Entry<Field, TableMeta.Reference> fieldReferenceEntry : tableMeta.getReferenceMap().entrySet()) {
                     TableMeta.Reference reference = fieldReferenceEntry.getValue();
 
@@ -680,9 +821,9 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                         Column annotation = tableMeta.getColumnNameMap().get(arg.getKey());
                         if (Objects.nonNull(annotation)) {
                             if ("json".equals(annotation.columnDefinition())) {
-                                postgresJsonHandler(arg.getKey(), "json", args);
+                                args.put(arg.getKey(), postgresJsonHandler("json", args.get(arg.getKey())));
                             } else if ("jsonb".equals(annotation.columnDefinition())) {
-                                postgresJsonHandler(arg.getKey(), "jsonb", args);
+                                args.put(arg.getKey(), postgresJsonHandler("jsonb", args.get(arg.getKey())));
                             }
                         }
                     }
@@ -725,7 +866,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                 insertUpdateCallback.handler(insert, entity, args);
             }
 
-            if (hasSaveReference()) {
+            if (cascade && hasSaveReference()) {
                 for (Map.Entry<Field, TableMeta.Reference> fieldReferenceEntry : tableMeta.getReferenceMap().entrySet()) {
                     TableMeta.Reference reference = fieldReferenceEntry.getValue();
                     if (Objects.nonNull(reference.getManyToMany()) || Objects.nonNull(reference.getOneToMany())) {
@@ -811,7 +952,6 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
         return MapUtils.isNotEmpty(tableMeta.getReferenceMap()) && tableMeta.getReferenceMap().values().stream().anyMatch(reference -> Objects.nonNull(reference.getManyToMany()) || (Objects.nonNull(reference.getOneToMany()) && reference.getOneToMany().cascadeSave()) || (Objects.nonNull(reference.getManyToOne()) && reference.getManyToOne().cascadeSave()));
     }
 
-
     protected void handlerReferenceListBefore(EntityDAO entityCodeDAO, List<?> entities, String refColumnName, Object refValue) {
 
     }
@@ -880,6 +1020,11 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     @Override
     public int update(String columns, String condition, T example) {
         return update(columns, condition, getArgsFromEntity(example, true));
+    }
+
+    @Override
+    public int[] batchUpdate(String columns, String condition, List<Object[]> paramsList) {
+        return tableDAO.batchUpdate(tableMeta.getTableName(), tableMeta.appendColumnVar(columns, false), condition, paramsList);
     }
 
     @Override
@@ -1022,9 +1167,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
         return value;
     }
 
-    private void postgresJsonHandler(String column, String type, Map<String, Object> args) {
-        Object value = args.get(column);
-
+    private PGobject postgresJsonHandler(String type, Object value) {
         PGobject pGobject = new PGobject();
         pGobject.setType(type);
 
@@ -1035,8 +1178,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                 throw new RuntimeException(e);
             }
         }
-
-        args.put(column, pGobject);
+        return pGobject;
     }
 
     private T watchSelect(Supplier<T> sqlHandlerSupplier) {

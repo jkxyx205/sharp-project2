@@ -1,15 +1,14 @@
 package com.rick.test.db;
 
 import com.rick.db.repository.EntityDAO;
+import com.rick.db.repository.EntityDAOManager;
 import com.rick.db.repository.EntityDAOSupport;
+import com.rick.db.repository.model.BaseEntityInfo;
 import com.rick.db.repository.support.EntityUtils;
 import com.rick.test.BaseTest;
 import com.rick.test.module.db.user.dao.RoleDAO;
 import com.rick.test.module.db.user.dao.UserDAO;
-import com.rick.test.module.db.user.entity.IdCard;
-import com.rick.test.module.db.user.entity.Pet;
-import com.rick.test.module.db.user.entity.Role;
-import com.rick.test.module.db.user.entity.User;
+import com.rick.test.module.db.user.entity.*;
 import com.rick.test.module.db.user.select.UserSelect;
 import com.rick.test.module.db.user.service.PetService;
 import com.rick.test.module.db.user.service.UserService;
@@ -23,10 +22,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -248,6 +245,54 @@ public class UserTest extends BaseTest<UserService, User, Long> {
         assertEquals(userDAO.selectById(userId, "name", String.class).get(),newName);
     }
 
+    @Test
+    @Order(7)
+    public void testInsertAndUpdateWithoutCascade() {
+        String newName = "newName";
+        User user = getUser();
+
+        userDAO.insertWithoutCascade(user);
+        assertEquals(false, user.getId() == null);
+
+        user.setName(newName);
+        userDAO.updateWithoutCascade(user);
+
+        assertEquals(userDAO.selectById(user.getId(), "name", String.class).get(),newName);
+    }
+
+    @Test
+    @Order(8)
+    public void testInsertAndUpdateBatchWithoutCascade() {
+        String newName = "newName1";
+        User user = getUser();
+
+        // 手动设置 BaseEntityInfo
+        LocalDateTime now = LocalDateTime.now();
+        BaseEntityInfo baseEntityInfo = new BaseEntityInfo();
+        baseEntityInfo.setCreateBy(2L);
+        baseEntityInfo.setCreateTime(now);
+        baseEntityInfo.setUpdateBy(2L);
+        baseEntityInfo.setUpdateTime(now);
+        baseEntityInfo.setDeleted(false);
+
+        user.setBaseEntityInfo(baseEntityInfo);
+
+        // 批量新增
+        userDAO.insertWithoutCascade(Arrays.asList(user));
+        assertEquals(false, user.getId() == null);
+
+        // 测试 id 自动增长
+        UserGenerated userGenerated = UserGenerated.builder().name("Jim").build();
+        EntityDAOManager.getDAO(UserGenerated.class).insertWithoutCascade(Arrays.asList(userGenerated));
+        assertEquals(false, userGenerated.getId() == null);
+
+        // 批量更新
+        user.setName(newName);
+        userDAO.updateWithoutCascade(Arrays.asList(user));
+
+        assertEquals(userDAO.selectById(user.getId(), "name", String.class).get(),newName);
+    }
+
     @AfterAll
     public void afterAll() {
         jdbcTemplate.execute("""
@@ -256,6 +301,17 @@ public class UserTest extends BaseTest<UserService, User, Long> {
                     truncate table t_pet;
                     truncate table t_role;
                     truncate table t_user_role;
+                    truncate table t_user_generated;
                 """);
+    }
+
+    private User getUser() {
+        User user = User.builder()
+                .name("Tom")
+                .nameList(List.of("张三", "李四"))
+                .idCard(IdCard.builder().code("321283197719123452").build())
+                .petList(List.of(Pet.builder().name("Tom").build(), Pet.builder().name("Jerry").build()))
+                .build();
+        return user;
     }
 }

@@ -16,16 +16,15 @@ import org.springframework.jdbc.core.*;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.jdbc.datasource.DataSourceUtils;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.JdbcUtils;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -57,18 +56,18 @@ public class TableDAOImpl implements TableDAO {
     }
 
     @Override
-    public int update(String tableName, String columns, String condition, Object... args) {
-        return namedParameterJdbcTemplate.getJdbcTemplate().update("UPDATE " + tableName + " SET " + columns + SqlHelper.buildWhere(condition), args);
+    public int update(String tableName, String columnsCondition, String condition, Object... args) {
+        return namedParameterJdbcTemplate.getJdbcTemplate().update("UPDATE " + tableName + " SET " + columnsCondition + SqlHelper.buildWhere(condition), args);
     }
 
     @Override
-    public int update(String tableName, String columns, String condition, Map<String, Object> paramMap) {
-        return namedParameterJdbcTemplate.update("UPDATE " + tableName + " SET " + columns + SqlHelper.buildWhere(condition), paramMap);
+    public int update(String tableName, String columnsCondition, String condition, Map<String, Object> paramMap) {
+        return namedParameterJdbcTemplate.update("UPDATE " + tableName + " SET " + columnsCondition + SqlHelper.buildWhere(condition), paramMap);
     }
 
     @Override
-    public int[] batchUpdate(String tableName, String columns, String condition, List<Object[]> paramsList) {
-        return namedParameterJdbcTemplate.getJdbcTemplate().batchUpdate("UPDATE " + tableName + " SET " + columns + SqlHelper.buildWhere(condition), paramsList);
+    public int[] batchUpdate(String tableName, String columnsCondition, String condition, List<Object[]> paramsList) {
+        return namedParameterJdbcTemplate.getJdbcTemplate().batchUpdate("UPDATE " + tableName + " SET " + columnsCondition + SqlHelper.buildWhere(condition), paramsList);
     }
 
     @Override
@@ -93,7 +92,7 @@ public class TableDAOImpl implements TableDAO {
 
     @Override
     public int insert(String tableName, String columnNames, Object... args) {
-        String[] columns = columnNames.split("\\s*,\\s*"); // 按逗号分隔并去掉空格
+        String[] columns = columnNames.split(COLUMN_NAME_SEPARATOR_REGEX); // 按逗号分隔并去掉空格
 
         if (columns.length != args.length) {
             throw new IllegalArgumentException("列名数量与参数数量不一致");
@@ -122,6 +121,37 @@ public class TableDAOImpl implements TableDAO {
         return new SimpleJdbcInsert(namedParameterJdbcTemplate.getJdbcTemplate()).withTableName(tableName)
                 .usingColumns(columnNames.split(COLUMN_NAME_SEPARATOR_REGEX))
                 .execute(paramMap);
+    }
+
+    @Override
+    public List<Object> batchInsert(String tableName, String columnsName, String varCondition, List<Object[]> paramsList) {
+        String insertSQL = SqlHelper.getInsertSQL(tableName, columnsName, varCondition);
+//        return namedParameterJdbcTemplate.getJdbcTemplate().batchUpdate(insertSQL, paramsList);
+
+        // 获取主键的方法
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        namedParameterJdbcTemplate.getJdbcTemplate().batchUpdate(
+                con -> con.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS),
+                new BatchPreparedStatementSetter() {
+                    @Override
+                    public void setValues(PreparedStatement ps, int i) throws SQLException {
+                        Object[] params = paramsList.get(i);
+                        for (int j = 0; j < params.length; j++) {
+                            ps.setObject(j + 1, params[j]);
+                        }
+                    }
+
+                    @Override
+                    public int getBatchSize() {
+                        return paramsList.size();
+                    }
+                },
+                keyHolder
+        );
+        // 获取所有生成的 id
+        return keyHolder.getKeyList().stream()
+                .map(map -> map.values().iterator().next())
+                .collect(Collectors.toList());
     }
 
 //    /**

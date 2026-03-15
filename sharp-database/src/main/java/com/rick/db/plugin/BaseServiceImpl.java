@@ -213,6 +213,36 @@ public class BaseServiceImpl<D extends EntityDAO<T, ID>, T extends EntityId<ID>,
     }
 
     @Override
+    public int[] insertOrUpdate(List<Map<String, Object>> paramMap) {
+        return baseDAO.insertOrUpdate(paramMap);
+    }
+
+    @Override
+    public T insertWithoutCascade(T entity) {
+        return baseDAO.insertWithoutCascade(entity);
+    }
+
+    @Override
+    public T updateWithoutCascade(T entity) {
+        return baseDAO.updateWithoutCascade(entity);
+    }
+
+    @Override
+    public Collection<T> insertWithoutCascade(Collection<T> entityList) {
+        return baseDAO.insertWithoutCascade(entityList);
+    }
+
+    @Override
+    public Collection<T> updateWithoutCascade(Collection<T> entityList) {
+        return baseDAO.updateWithoutCascade(entityList);
+    }
+
+    @Override
+    public Collection<T> insertOrUpdateWithoutCascade(Collection<T> entityList) {
+        return baseDAO.insertOrUpdateWithoutCascade(entityList);
+    }
+
+    @Override
     public T update(T entity) {
         return baseDAO.update(entity);
     }
@@ -265,6 +295,11 @@ public class BaseServiceImpl<D extends EntityDAO<T, ID>, T extends EntityId<ID>,
     @Override
     public int update(String columns, String condition, T example) {
         return baseDAO.update(columns, condition, example);
+    }
+
+    @Override
+    public int[] batchUpdate(String columns, String condition, List<Object[]> paramsList) {
+        return baseDAO.batchUpdate(columns, condition, paramsList);
     }
 
     @Override

@@ -118,6 +118,18 @@ public interface EntityDAO<T, ID> {
 
     T insertOrUpdate(@Valid @NotNull Map<String, Object> paramMap);
 
+    int[] insertOrUpdate(List<Map<String, Object>> paramMap);
+
+    T insertWithoutCascade(@Valid @NotNull T entity);
+
+    T updateWithoutCascade(@Valid @NotNull T entity);
+
+    Collection<T> insertWithoutCascade(Collection<T> entityList);
+
+    Collection<T> updateWithoutCascade(Collection<T> entityList);
+
+    Collection<T> insertOrUpdateWithoutCascade(Collection<T> entityList);
+
     Collection<T> insertOrUpdateTable(Collection<T> entityList);
 
     Collection<T> insertOrUpdateTable(Collection<T> entityList, @NotNull String refColumnName, @NotNull Object refValue);
@@ -131,6 +143,8 @@ public interface EntityDAO<T, ID> {
     int update(@NotBlank String columns, String condition, Map<String, Object> paramMap);
 
     int update(@NotBlank String columns, String condition, T example);
+
+    int[] batchUpdate(@NotBlank String columns, String condition, List<Object[]> paramsList);
 
     int updateById(@NotBlank String columns, @NotNull ID id, Object... args);
 

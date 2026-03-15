@@ -55,6 +55,20 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
     }
 
     @Override
+    public List<Object> batchInsert(String tableName, String columnsName, String varCondition, List<Object[]> paramsList) {
+//        因为参数是 Object[] ExtendTableDAOImpl 没有办法保证 addInsertInfo，需要在应用层传入
+//        LocalDateTime now = LocalDateTime.now();
+//        for (Object[] params : paramsList) {
+//            params[2] = 1;
+//            params[3] = now;
+//            params[4] = 1;
+//            params[5] = now;
+//            params[6] = false;
+//        }
+        return super.batchInsert(tableName, columnsName, varCondition, paramsList);
+    }
+
+    @Override
     public int delete(String tableName, String condition, Object... args) {
         if (Objects.nonNull(tableNameDAOMap.get(tableName))) {
             return update(tableName, "is_deleted = ?", condition + " AND is_deleted = false", ArrayUtils.addAll(new Object[]{true}, args));
