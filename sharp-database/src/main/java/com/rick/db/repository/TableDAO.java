@@ -42,6 +42,8 @@ public interface TableDAO {
 
     int update(String tableName, String columns, String condition, Map<String, Object> paramMap);
 
+    int[] batchUpdate(String tableName, String columns, String condition, List<Object[]> paramsList);
+
     int deleteIn(String tableName, String deleteColumn, Collection<?> deleteValues);
 
     int deleteNotIn(String tableName, String deleteColumn, Collection<?> deleteValues);

@@ -5,6 +5,7 @@ import com.rick.db.repository.EntityDAOSupport;
 import com.rick.db.repository.support.EntityUtils;
 import com.rick.test.BaseTest;
 import com.rick.test.module.db.user.dao.RoleDAO;
+import com.rick.test.module.db.user.dao.UserDAO;
 import com.rick.test.module.db.user.entity.IdCard;
 import com.rick.test.module.db.user.entity.Pet;
 import com.rick.test.module.db.user.entity.Role;
@@ -22,6 +23,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,6 +52,9 @@ public class UserTest extends BaseTest<UserService, User, Long> {
     PetService petService;
 
     private Long userId;
+
+    @Autowired
+    private UserDAO userDAO;
 
     public UserTest(@Autowired UserService baseService) {
         super(baseService);
@@ -196,7 +201,7 @@ public class UserTest extends BaseTest<UserService, User, Long> {
     }
 
     @Test
-    @Order(6)
+    @Order(99)
     public void testUserDelete() {
         int count = entityDAO.deleteById(userId);
         assertEquals(1, count, "删除不成功");
@@ -225,6 +230,22 @@ public class UserTest extends BaseTest<UserService, User, Long> {
                 .build();
 
         super.testInsertOrUpdate(user);
+    }
+
+    @Test
+    @Order(6)
+    public void testBatchUpdate() {
+        String newName = "newName";
+
+        List<Object[]> paramsList = new ArrayList<>();
+        paramsList.add(new Object[]{newName, userId});
+
+        int[] results = userDAO.batchUpdate("name", "id = ?", paramsList);
+
+        assertEquals(results.length,1);
+        assertEquals(results[0],1);
+
+        assertEquals(userDAO.selectById(userId, "name", String.class).get(),newName);
     }
 
     @AfterAll

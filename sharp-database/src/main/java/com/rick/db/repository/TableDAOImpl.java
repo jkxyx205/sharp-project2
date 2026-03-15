@@ -67,6 +67,11 @@ public class TableDAOImpl implements TableDAO {
     }
 
     @Override
+    public int[] batchUpdate(String tableName, String columns, String condition, List<Object[]> paramsList) {
+        return namedParameterJdbcTemplate.getJdbcTemplate().batchUpdate("UPDATE " + tableName + " SET " + columns + SqlHelper.buildWhere(condition), paramsList);
+    }
+
+    @Override
     public int deleteIn(String tableName, String deleteColumn, Collection<?> deleteValues) {
         return delete(tableName, deleteColumn+ " IN(:params)", Map.of("params", deleteValues));
     }
