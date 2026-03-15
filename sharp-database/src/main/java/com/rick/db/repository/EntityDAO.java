@@ -110,13 +110,13 @@ public interface EntityDAO<T, ID> {
 
     T insert(@Valid @NotNull T entity);
 
-    T insertOrUpdate(@Valid @NotNull Map<String, Object> paramMap);
-
     T update(@Valid @NotNull T entity);
 
     T insertOrUpdate(@Valid @NotNull T entity);
 
     Collection<T> insertOrUpdate(@Valid Collection<T> entityList);
+
+    T insertOrUpdate(@Valid @NotNull Map<String, Object> paramMap);
 
     Collection<T> insertOrUpdateTable(Collection<T> entityList);
 

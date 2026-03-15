@@ -540,17 +540,6 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
-    public Collection<T> insertOrUpdate(Collection<T> entityList) {
-        if (CollectionUtils.isNotEmpty(entityList)) {
-            for (T t : entityList) {
-                insertOrUpdate(t);
-            }
-        }
-
-        return entityList;
-    }
-
-    @Override
     public Collection<T> insertOrUpdateTable(Collection<T> entityList) {
         return insertOrUpdateTable(entityList,  true, null);
     }
@@ -629,13 +618,29 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
+    public T insert(T entity) {
+        return insertOrUpdate0(entity, true);
+    }
+
+    @Override
+    public T update(T entity) {
+        return insertOrUpdate0(entity, false);
+    }
+
+    @Override
     public T insertOrUpdate(T entity) {
         return insertOrUpdate0(entity, Objects.isNull(getIdValue(entity)));
     }
 
     @Override
-    public T insert(T entity) {
-        return insertOrUpdate0(entity, true);
+    public Collection<T> insertOrUpdate(Collection<T> entityList) {
+        if (CollectionUtils.isNotEmpty(entityList)) {
+            for (T t : entityList) {
+                insertOrUpdate(t);
+            }
+        }
+
+        return entityList;
     }
 
     @Override
@@ -647,11 +652,6 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
         insertOrUpdate(entity);
         paramMap.put(tableMeta.getIdMeta().idPropertyName(), getIdValue(entity));
         return entity;
-    }
-
-    @Override
-    public T update(T entity) {
-        return insertOrUpdate0(entity, false);
     }
 
     protected T insertOrUpdate0(T entity, boolean insert) {
