@@ -2,7 +2,7 @@ spring:
   application:
     name: sharp-test
   datasource:
-    url: jdbc:postgresql://localhost:5432/erp
+    url: jdbc:postgresql://localhost:5432/test
     username: postgres
     password: jkxyx@05
 
