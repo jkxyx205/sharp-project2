@@ -784,8 +784,8 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     @Override
     public Collection<T> insertOrUpdateWithoutCascade(Collection<T> entityList) {
         if (CollectionUtils.isNotEmpty(entityList)) {
-            insertWithoutCascade(entityList.stream().filter(t -> Objects.nonNull(getIdValue(t))).collect(Collectors.toList()));
-            updateWithoutCascade(entityList.stream().filter(t -> Objects.isNull(getIdValue(t))).collect(Collectors.toList()));
+            insertWithoutCascade(entityList.stream().filter(t -> Objects.isNull(getIdValue(t))).collect(Collectors.toList()));
+            updateWithoutCascade(entityList.stream().filter(t -> Objects.nonNull(getIdValue(t))).collect(Collectors.toList()));
         }
 
         return entityList;
@@ -862,8 +862,8 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                 update(tableMeta.getUpdateColumn(), tableMeta.getIdMeta().idColumnName() + " = :" + tableMeta.getIdMeta().idPropertyName(), args);
             }
 
-            if (Objects.nonNull(insertUpdateCallback)) {
-                insertUpdateCallback.handler(insert, entity, args);
+            if (Objects.nonNull(insertUpdateCallback) && entity instanceof EntityId<?>) {
+                insertUpdateCallback.handler(insert, (EntityId) entity, args);
             }
 
             if (cascade && hasSaveReference()) {
