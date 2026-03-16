@@ -6,11 +6,13 @@ package com.rick.test.module.db.user.entity;
  * PostgreSQL 定义自增 id 有两种方式：
  *
  * 方式一：SERIAL（传统方式）
- * sqlCREATE TABLE t_user (
+ * Integer id;
+ * CREATE TABLE t_user (
  *     id SERIAL PRIMARY KEY,
  *     name VARCHAR(100)
  * );
  * 方式二：GENERATED ALWAYS AS IDENTITY（推荐，PostgreSQL 10+）
+ * Long id;
  * sqlCREATE TABLE t_user (
  *     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
  *     name VARCHAR(100)

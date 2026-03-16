@@ -3,10 +3,7 @@ package com.rick.test;
 import com.rick.db.plugin.generator.TableGenerator;
 import com.rick.test.module.db.complex.entity.CodeDescription;
 import com.rick.test.module.db.complex.entity.ComplexModel;
-import com.rick.test.module.db.user.entity.IdCard;
-import com.rick.test.module.db.user.entity.Pet;
-import com.rick.test.module.db.user.entity.Role;
-import com.rick.test.module.db.user.entity.User;
+import com.rick.test.module.db.user.entity.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,5 +31,10 @@ public class TableGeneratorTest {
     public void testGeneratorComplexTable() {
         tableGenerator.createTable(CodeDescription.class);
         tableGenerator.createTable(ComplexModel.class);
+    }
+
+    @Test
+    public void testUserGenerated() {
+        tableGenerator.createTable(UserGenerated.class);
     }
 }

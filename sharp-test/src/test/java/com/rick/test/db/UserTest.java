@@ -293,16 +293,24 @@ public class UserTest extends BaseTest<UserService, User, Long> {
         assertEquals(userDAO.selectById(user.getId(), "name", String.class).get(),newName);
     }
 
+    @Test
+    @Order(8)
+    public void testInsertSequence() {
+        UserGenerated userGenerated = UserGenerated.builder().name("Tom").build();
+        EntityDAOManager.getDAO(UserGenerated.class).insert(userGenerated);
+        assertEquals(false, userGenerated.getId() == null);
+    }
+
     @AfterAll
     public void afterAll() {
-        jdbcTemplate.execute("""
-                    truncate table t_user;
-                    truncate table t_id_card;
-                    truncate table t_pet;
-                    truncate table t_role;
-                    truncate table t_user_role;
-                    truncate table t_user_generated;
-                """);
+//        jdbcTemplate.execute("""
+//                    truncate table t_user;
+//                    truncate table t_id_card;
+//                    truncate table t_pet;
+//                    truncate table t_role;
+//                    truncate table t_user_role;
+//                    truncate table t_user_generated;
+//                """);
     }
 
     private User getUser() {
