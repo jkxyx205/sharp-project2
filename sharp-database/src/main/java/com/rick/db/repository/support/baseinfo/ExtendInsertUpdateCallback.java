@@ -3,7 +3,7 @@ package com.rick.db.repository.support.baseinfo;
 import com.rick.db.repository.model.BaseCodeEntity;
 import com.rick.db.repository.model.BaseEntity;
 import com.rick.db.repository.model.BaseEntityInfo;
-import com.rick.db.repository.model.BaseEntityInfoGetter;
+import com.rick.db.repository.model.EntityId;
 import com.rick.db.repository.support.InsertUpdateCallback;
 
 import java.time.LocalDateTime;
@@ -15,10 +15,10 @@ import static com.rick.db.repository.support.Constants.*;
  * @author Rick.Xu
  * @date 2025/11/17 13:18
  */
-public class ExtendInsertUpdateCallback implements InsertUpdateCallback<BaseEntityInfoGetter> {
+public class ExtendInsertUpdateCallback implements InsertUpdateCallback<EntityId<Long>, Long> {
 
     @Override
-    public void handler(boolean insert, BaseEntityInfoGetter baseEntityInfoGetter, Map<String, Object> args) {
+    public void handler(boolean insert, EntityId<Long> entity, Map<String, Object> args) {
         BaseEntityInfo baseEntityInfo = new BaseEntityInfo();
         if (insert) {
             baseEntityInfo.setCreateBy((Long) args.get(CREATE_ID_COLUMN_NAME));
@@ -34,11 +34,11 @@ public class ExtendInsertUpdateCallback implements InsertUpdateCallback<BaseEnti
             baseEntityInfo.setDeleted((Boolean) args.get("baseEntityInfo.deleted"));
         }
 
-        if (baseEntityInfoGetter instanceof BaseEntity baseEntity) {
+        if (entity instanceof BaseEntity baseEntity) {
             baseEntity.setBaseEntityInfo(baseEntityInfo);
-        } else if (baseEntityInfoGetter instanceof BaseCodeEntity baseCodeEntity) {
+        } else if (entity instanceof BaseCodeEntity baseCodeEntity) {
             baseCodeEntity.setBaseEntityInfo(baseEntityInfo);
         }
-
     }
+
 }
