@@ -331,7 +331,7 @@ public class TableDAOImpl implements TableDAO {
     public List<Map<String, Object>> select(String sql, Object... args) {
         List<Map<String, Object>> results = namedParameterJdbcTemplate.getJdbcTemplate().query(sql, new ColumnMapRowMapper(), args);
         if (log.isDebugEnabled()) {
-            log.debug("SQL => [{}], args => [{}], results [{}]", sql, args, results);
+            log.debug("SQL => [{}], args => [{}], results = [{}]", sql, Arrays.toString(args), results);
         }
         return results;
     }
@@ -340,7 +340,7 @@ public class TableDAOImpl implements TableDAO {
     public <E> List<E> select(Class<E> clazz, String sql, Object... args) {
         List<E> results = namedParameterJdbcTemplate.getJdbcTemplate().query(sql, determineRowMapper(clazz), args);
         if (log.isDebugEnabled()) {
-            log.debug("SQL => [{}], args => [{}], results [{}]", sql, args, results);
+            log.debug("SQL => [{}], args => [{}], results = [{}]", sql, Arrays.toString(args), results);
         }
         return results;
     }
@@ -358,7 +358,7 @@ public class TableDAOImpl implements TableDAO {
         }, args);
 
         if (log.isDebugEnabled()) {
-            log.debug("SQL => [{}], args => [{}], results [{}]", sql, args, m);
+            log.debug("SQL => [{}], args => [{}], results = [{}]", sql, args, m);
         }
 
         return m;
@@ -373,7 +373,7 @@ public class TableDAOImpl implements TableDAO {
     public <E> List<E> select(String sql, Map<String, Object> paramMap, JdbcTemplateCallback<E> jdbcTemplateCallback) {
         List<E> results = jdbcTemplateCallback.select(namedParameterJdbcTemplate, sql, paramMap);
         if (log.isDebugEnabled()) {
-            log.debug("SQL => [{}], args => [{}], results [{}]", sql, paramMap, results);
+            log.debug("SQL => [{}], args => [{}], results = [{}]", sql, paramMap, results);
         }
         return results;
     }
@@ -389,7 +389,7 @@ public class TableDAOImpl implements TableDAO {
             return null;
         });
         if (log.isDebugEnabled()) {
-            log.debug("SQL => [{}], paramMap => [{}], results [{}]", sql, paramMap, m);
+            log.debug("SQL => [{}], paramMap => [{}], results = [{}]", sql, paramMap, m);
         }
         return m;
     }
@@ -431,7 +431,7 @@ public class TableDAOImpl implements TableDAO {
         String queryAllGuestInstanceIdsSQL = String.format("SELECT %s FROM %s WHERE %s = ?", guestColumn, refTableName, keyColumn);
         List<?> dbGuestInstanceIds = namedParameterJdbcTemplate.getJdbcTemplate().queryForList(queryAllGuestInstanceIdsSQL, guestInstanceIds.iterator().next().getClass(), keyInstance);
         if (log.isDebugEnabled()) {
-            log.debug("SQL => [{}], args => [{}], results [{}]", queryAllGuestInstanceIdsSQL, keyInstance, dbGuestInstanceIds);
+            log.debug("SQL => [{}], args => [{}], results = [{}]", queryAllGuestInstanceIdsSQL, keyInstance, dbGuestInstanceIds);
         }
         // 2.2 新增
         List<?> newGuestInstanceIds = guestInstanceIds.stream().filter(guestId -> !dbGuestInstanceIds.contains(guestId)).collect(Collectors.toList());
