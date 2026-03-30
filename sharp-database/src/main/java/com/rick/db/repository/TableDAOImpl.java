@@ -405,6 +405,16 @@ public class TableDAOImpl implements TableDAO {
     }
 
     @Override
+    public <E> Optional<E> selectForObject(Class<E> clazz, String sql, Object... args) {
+        return OperatorUtils.expectedAsOptional(select(clazz, sql, args));
+    }
+
+    @Override
+    public <E> Optional<E> selectForObject(Class<E> clazz, String sql, Map<String, Object> paramMap) {
+        return OperatorUtils.expectedAsOptional(select(clazz, sql, paramMap));
+    }
+
+    @Override
     public void updateRefTable(String refTableName, String keyColumn, String guestColumn, Object keyInstance, Collection<?> guestInstanceIds) {
         // 删除
         if (CollectionUtils.isEmpty(guestInstanceIds)) {
