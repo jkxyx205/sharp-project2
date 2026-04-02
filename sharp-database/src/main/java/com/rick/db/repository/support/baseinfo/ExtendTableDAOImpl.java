@@ -138,8 +138,8 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
     private static final Pattern ORDER_GROUP_LIMIT_PATTERN =
             Pattern.compile("\\b(order\\s+by|group\\s+by|limit)\\b", Pattern.CASE_INSENSITIVE);
 
-    public static String addIsDeletedCondition(String sql) {
-        if (StringUtils.isBlank(sql)) {
+    public String addIsDeletedCondition(String sql) {
+        if (StringUtils.isBlank(sql) || hasIsDeletedCondition(sql)) {
             return sql;
         }
 
@@ -172,6 +172,17 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
                     .insert(insertPos, " WHERE "+LOGIC_DELETE_COLUMN_NAME+" = false ")
                     .toString();
         }
+    }
+
+    /**
+     * 判断客户端是否已经对 is_deleted 条件做了设置
+     * @param sql
+     * @return
+     */
+    private boolean hasIsDeletedCondition(String sql) {
+        if (sql == null || sql.isEmpty()) return false;
+        String regex = "(?i)\\bis_deleted\\s*(=|<>|!=|>=|<=|>|<)|(?i)\\bis_deleted\\s+(is|in|like)\\s+";
+        return Pattern.compile(regex).matcher(sql).find();
     }
 
 }
