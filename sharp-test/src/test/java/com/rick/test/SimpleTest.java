@@ -9,6 +9,7 @@ import org.springframework.util.ClassUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * @author Rick.Xu
@@ -70,6 +71,25 @@ public class SimpleTest {
         Map<Long, List<Pet>> map2 = OperatorUtils.groupMap(List.of(pet1, pet2), Pet::getUserId);
         Map<Long, List<Pet>> map3 = OperatorUtils.groupMap(List.of(pet1, pet2), (SFunction<Pet, Long>) pet -> pet.getUser().getId());
 
+    }
+
+
+    /**
+     * 判断客户端是否已经对 is_deleted 条件做了设置
+     * @param sql
+     * @return
+     */
+    private boolean hasIsDeletedCondition(String sql) {
+        if (sql == null || sql.isEmpty()) return false;
+        String regex = "(?i)\\bis_deleted\\s*(=|<>|!=|>=|<=|>|<)|(?i)\\bis_deleted\\s+(is|in|like)\\s+";
+        return Pattern.compile(regex).matcher(sql).find();
+    }
+
+
+    @Test
+    public void testHasIsDeletedCondition() {
+        System.out.println(hasIsDeletedCondition("select * from a"));
+        System.out.println(hasIsDeletedCondition("select * from a where is_deleted = false"));
     }
 
 }
