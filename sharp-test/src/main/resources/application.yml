@@ -14,9 +14,14 @@ sharp:
 logging:
   level:
     root: WARN
-    org.springframework.jdbc.core: DEBUG
-    org.springframework.jdbc.core.StatementCreatorUtils: TRACE
-    com.rick.test: DEBUG
+#    org.springframework.jdbc.core: DEBUG
+#    org.springframework.jdbc.core.StatementCreatorUtils: TRACE
+    com:
+      rick:
+        test: DEBUG
+        db:
+          repository: DEBUG
+
 
 springdoc:
   kotlin:
