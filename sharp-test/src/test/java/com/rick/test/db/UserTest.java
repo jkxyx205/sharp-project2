@@ -303,14 +303,14 @@ public class UserTest extends BaseTest<UserService, User, Long> {
 
     @AfterAll
     public void afterAll() {
-//        jdbcTemplate.execute("""
-//                    truncate table t_user;
-//                    truncate table t_id_card;
-//                    truncate table t_pet;
-//                    truncate table t_role;
-//                    truncate table t_user_role;
-//                    truncate table t_user_generated;
-//                """);
+        jdbcTemplate.execute("""
+                    truncate table t_user;
+                    truncate table t_id_card;
+                    truncate table t_pet;
+                    truncate table t_role;
+                    truncate table t_user_role;
+                    truncate table t_user_generated;
+                """);
     }
 
     private User getUser() {
