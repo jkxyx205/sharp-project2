@@ -136,7 +136,8 @@ public class TableMeta<T> {
     }
 
     public String getSelectSQL(String columns) {
-        return "SELECT " + columns + " FROM " + getTableName();
+//        return "SELECT " + columns + " FROM " + getTableName();
+        return SqlHelper.buildSelect(getTableName(), columns);
     }
 
 

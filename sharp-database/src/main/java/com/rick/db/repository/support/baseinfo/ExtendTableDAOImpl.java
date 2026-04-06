@@ -2,6 +2,7 @@ package com.rick.db.repository.support.baseinfo;
 
 import com.rick.db.repository.*;
 import com.rick.db.repository.support.SqlHelper;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -9,10 +10,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,17 +31,107 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
     }
 
     @Override
-    public int update(String tableName, String columns, String condition, Object... args) {
-        columns = "update_by = ?, update_time = ?," + columns;
-        return getNamedParameterJdbcTemplate().getJdbcTemplate().update("UPDATE " + tableName + " SET " + columns + SqlHelper.buildWhere(condition), ArrayUtils.addAll(new Object[]{getUserId(), LocalDateTime.now()}, args));
+    public int update(String tableName, String columnsCondition, String condition, Object... args) {
+        // 判断是否字段发生更新
+        if (!hasUpdate(tableName, columnsCondition, condition, args)) {
+            return 0;
+        }
+
+        columnsCondition = "update_by = ?, update_time = ?," + columnsCondition;
+        // return getNamedParameterJdbcTemplate().getJdbcTemplate().update("UPDATE " + tableName + " SET " + columnsCondition + SqlHelper.buildWhere(condition), ArrayUtils.addAll(new Object[]{getUserId(), LocalDateTime.now()}, args));
+        return super.update(tableName, columnsCondition, condition, ArrayUtils.addAll(new Object[]{getUserId(), LocalDateTime.now()}, args));
     }
 
     @Override
-    public int update(String tableName, String columns, String condition, Map<String, Object> paramMap) {
+    public int update(String tableName, String columnsCondition, String condition, Map<String, Object> paramMap) {
         paramMap.put("baseEntityInfo.updateBy", getUserId());
         paramMap.put("baseEntityInfo.updateTime", LocalDateTime.now());
         paramMap.put("baseEntityInfo.deleted", false);
-        return getNamedParameterJdbcTemplate().update("UPDATE " + tableName + " SET " + columns + SqlHelper.buildWhere(condition), paramMap);
+
+        // 判断是否字段发生更新
+        if (!hasUpdate(tableName, columnsCondition, condition, paramMap)) {
+            return 0;
+        }
+
+//        return getNamedParameterJdbcTemplate().update("UPDATE " + tableName + " SET " + columnsCondition + SqlHelper.buildWhere(condition), paramMap);
+        return super.update(tableName, columnsCondition, condition, paramMap);
+    }
+    private boolean hasUpdate(String tableName, String columnsCondition, String condition, Object... args) {
+        String columnsConditionFieldNames = extractFieldNames(columnsCondition);
+        String selectSQL = SqlHelper.buildSelectWhere(tableName, columnsConditionFieldNames, condition);
+
+        int columnsConditionFieldNamesArgsLength = columnsConditionFieldNames.split(COLUMN_NAME_SEPARATOR_REGEX).length;
+        List<Map<String, Object>> dbMapList = select(selectSQL, Arrays.copyOfRange(args, args.length - columnsConditionFieldNamesArgsLength, args.length));
+        if (CollectionUtils.isEmpty(dbMapList)) {
+            return true;
+        }
+
+        List<String> columnNameList = extractFieldArray(columnsCondition);
+
+        for (Map<String, Object> dbMap : dbMapList) {
+            for (int i = 0; i < columnNameList.size(); i++) {
+                String columnName = columnNameList.get(i);
+                if (Objects.equals(columnName, ID_COLUMN_NAME)
+                        || Objects.equals(columnName, CREATE_ID_COLUMN_NAME)
+                        || Objects.equals(columnName, CREATE_TIME_COLUMN_NAME)
+                        || Objects.equals(columnName, UPDATE_ID_COLUMN_NAME)
+                        || Objects.equals(columnName, UPDATE_TIME_COLUMN_NAME)) {
+                    continue;
+                }
+
+                Object paramValue = args[i];
+
+                Object dbValue = dbMap.get(columnName);
+                if (paramValue instanceof String && Objects.nonNull(dbValue)) {
+                    dbValue =  String.valueOf(dbValue);
+                }
+
+                if (!Objects.equals(dbValue, paramValue)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private boolean hasUpdate(String tableName, String columnsCondition, String condition, Map<String, Object> paramMap) {
+        String selectSQL = SqlHelper.buildSelectWhere(tableName, extractFieldNames(columnsCondition), condition);
+        List<Map<String, Object>> dbMapList = select(selectSQL, paramMap);
+
+//        if (CollectionUtils.isEmpty(dbMapList) && Objects.nonNull(paramMap.get(ID_COLUMN_NAME)) && condition.indexOf(":" + ID_COLUMN_NAME) > -1) {
+//            // 处理 Id.GenerationType.ASSIGN
+//            return true;
+//        }
+        if (CollectionUtils.isEmpty(dbMapList)) {
+            return true;
+        }
+
+        Map<String, String> columnNameParamMap = extractFieldMap(columnsCondition);
+
+        for (Map<String, Object> dbMap : dbMapList) {
+            for (Map.Entry<String, Object> dbMapEntry : dbMap.entrySet()) {
+                if (Objects.equals(dbMapEntry.getKey(), ID_COLUMN_NAME)
+                || Objects.equals(dbMapEntry.getKey(), CREATE_ID_COLUMN_NAME)
+                || Objects.equals(dbMapEntry.getKey(), CREATE_TIME_COLUMN_NAME)
+                || Objects.equals(dbMapEntry.getKey(), UPDATE_ID_COLUMN_NAME)
+                || Objects.equals(dbMapEntry.getKey(), UPDATE_TIME_COLUMN_NAME)) {
+                    continue;
+                }
+
+                Object paramValue = paramMap.get(columnNameParamMap.get(dbMapEntry.getKey()));
+                Object dbValue = dbMapEntry.getValue();
+                if (paramValue instanceof String && Objects.nonNull(dbValue)) {
+                    dbValue =  String.valueOf(dbValue);
+                }
+
+                if (!Objects.equals(dbValue, paramValue)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     @Override
@@ -183,6 +271,33 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
         if (sql == null || sql.isEmpty()) return false;
         String regex = "(?i)\\bis_deleted\\s*(=|<>|!=|>=|<=|>|<)|(?i)\\bis_deleted\\s+(is|in|like)\\s+";
         return Pattern.compile(regex).matcher(sql).find();
+    }
+
+    private String extractFieldNames(String sqlUpdateParams) {
+        String[] pairs = sqlUpdateParams.split(",");
+        return Arrays.stream(pairs)
+                .map(pair -> pair.split("=")[0].trim())
+                .collect(Collectors.joining(", "));
+    }
+
+    public Map<String, String> extractFieldMap(String sqlUpdateParams) {
+        return Arrays.stream(sqlUpdateParams.split(","))
+                .map(pair -> pair.split("=", 2))
+                .collect(Collectors.toMap(
+                        parts -> parts[0].trim(),
+                        parts -> parts[1].trim()
+                                .replaceAll("^:", "")        // 去掉前缀 :
+                                .replaceAll("::[a-zA-Z]+$", "") // 去掉 postgres 类型转换 ::json 等
+                                .trim(),
+                        (a, b) -> a,
+                        LinkedHashMap::new
+                ));
+    }
+
+    public List<String> extractFieldArray(String sqlUpdateParams) {
+        return Arrays.stream(sqlUpdateParams.split(","))
+                .map(pair -> pair.split("=", 2)[0].trim())
+                .collect(Collectors.toList());
     }
 
 }
