@@ -361,7 +361,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                     }
 
                     for (T t : list) {
-                        setPropertyValue(t, reference.getField().getName(), ObjectUtils.defaultIfNull(map.get(getIdValue(t)), Collections.emptyList()));
+                        setPropertyValue(t, tableMeta.getFieldPropertyNameMap().get(reference.getField()), ObjectUtils.defaultIfNull(map.get(getIdValue(t)), Collections.emptyList()));
                     }
                 } else if (Objects.nonNull(reference.getOneToMany()) && reference.getOneToMany().cascadeSelect()) {
                     String mappedBy = reference.getOneToMany().mappedBy();
@@ -383,21 +383,21 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                     for (T t : list) {
                         if (reference.getOneToMany().oneToOne()) {
                             List<Object> groupReferenceList = map.get(getIdValue(t));
-                            setPropertyValue(t, reference.getField().getName(), CollectionUtils.isEmpty(groupReferenceList) ? null : groupReferenceList.iterator().next());
+                            setPropertyValue(t, tableMeta.getFieldPropertyNameMap().get(reference.getField()), CollectionUtils.isEmpty(groupReferenceList) ? null : groupReferenceList.iterator().next());
                         } else {
-                            setPropertyValue(t, reference.getField().getName(), ObjectUtils.defaultIfNull(map.get(getIdValue(t)), Collections.emptyList()));
+                            setPropertyValue(t, tableMeta.getFieldPropertyNameMap().get(reference.getField()), ObjectUtils.defaultIfNull(map.get(getIdValue(t)), Collections.emptyList()));
                         }
                     }
                 } else if (Objects.nonNull(reference.getManyToOne()) && reference.getManyToOne().cascadeSelect()) {
-                    Set<?> refIds = list.stream().map(e -> getPropertyValue(e, reference.getField().getName()))
+                    Set<?> refIds = list.stream().map(e -> getPropertyValue(e, tableMeta.getFieldPropertyNameMap().get(reference.getField())))
                             .filter(e -> Objects.nonNull(e))
                             .map(e -> getIdValue(e))
                             .collect(Collectors.toSet());
 
                     for (T t : list) {
-                        threadLocalEntity.get().stream().filter(entity -> entity.getClass() == reference.getReferenceClass() && Objects.equals(getIdValue(entity), parsingColumnValue(reference.getField(), tableMeta.getFieldColumnNameMap().get(reference.getField()), getPropertyValue(t, reference.getField().getName()))))
+                        threadLocalEntity.get().stream().filter(entity -> entity.getClass() == reference.getReferenceClass() && Objects.equals(getIdValue(entity), parsingColumnValue(reference.getField(), tableMeta.getFieldColumnNameMap().get(reference.getField()), getPropertyValue(t, tableMeta.getFieldPropertyNameMap().get(reference.getField())))))
                                 .findFirst().ifPresent(entity -> {
-                                    setPropertyValue(t, reference.getField().getName(), entity);
+                                    setPropertyValue(t, tableMeta.getFieldPropertyNameMap().get(reference.getField()), entity);
                                     refIds.remove(getIdValue(entity));
                                 });
                     }
@@ -406,8 +406,8 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                         referenceList = referenceDAO.select(tableMeta.getIdMeta().idPropertyName() + " IN (:ids)", Map.of("ids", refIds));
                         Map<?, Object> map = referenceList.stream().collect(Collectors.toMap(e -> getIdValue(e), Function.identity()));
                         for (T t : list) {
-                            Object refEntity = getPropertyValue(t, reference.getField().getName());
-                            setPropertyValue(t, reference.getField().getName(), map.get(getIdValue(refEntity)));
+                            Object refEntity = getPropertyValue(t, tableMeta.getFieldPropertyNameMap().get(reference.getField()));
+                            setPropertyValue(t, tableMeta.getFieldPropertyNameMap().get(reference.getField()), map.get(getIdValue(refEntity)));
                         }
                     }
                 } else if (Objects.nonNull(reference.getSelect())) {
@@ -437,7 +437,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                         }
 
                         if (valueNull) {
-                            beanWrapper.setPropertyValue(reference.getField().getName(), null);
+                            beanWrapper.setPropertyValue(tableMeta.getFieldPropertyNameMap().get(reference.getField()), null);
                         } else {
                             List<?> selectList = tableDAO.select(reference.getReferenceClass(), select.value(), params);
                             if (CollectionUtils.isNotEmpty(selectList)) {
@@ -449,7 +449,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                             }
 
                             Object value = Collection.class.isAssignableFrom(reference.getField().getType()) ? selectList : OperatorUtils.expectedAsOptional(selectList).orElse(null);
-                            beanWrapper.setPropertyValue(reference.getField().getName(), value);
+                            beanWrapper.setPropertyValue(tableMeta.getFieldPropertyNameMap().get(reference.getField()), value);
                         }
                     }
                 }
@@ -804,7 +804,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
                     if (Objects.nonNull(reference.getManyToOne()) && reference.getManyToOne().cascadeSave()) {
                         EntityDAO referenceDAO = EntityDAOManager.getDAO(reference.getReferenceClass());
-                        Object referenceEntity = getPropertyValue(entity, reference.getField().getName());
+                        Object referenceEntity = getPropertyValue(entity, tableMeta.getFieldPropertyNameMap().get(reference.getField()));
                         if (!threadLocalEntity.get().contains(referenceEntity)) {
                             referenceDAO.insertOrUpdate(referenceEntity);
                         }
@@ -872,7 +872,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                     if (Objects.nonNull(reference.getManyToMany()) || Objects.nonNull(reference.getOneToMany())) {
                         EntityDAO referenceDAO = EntityDAOManager.getDAO(reference.getReferenceClass());
                         if (Objects.nonNull(reference.getManyToMany())) {
-                            List<Object> list = (List<Object>) getPropertyValue(entity, reference.getField().getName());
+                            List<Object> list = (List<Object>) getPropertyValue(entity, tableMeta.getFieldPropertyNameMap().get(reference.getField()));
 
                             tableDAO.delete(reference.getManyToMany().tableName(), reference.getManyToMany().joinColumnId()+" = ?", getIdValue(entity));
 
@@ -893,12 +893,12 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                         } else if (Objects.nonNull(reference.getOneToMany()) && reference.getOneToMany().cascadeSave()) {
                             List<Object> list = null;
                             if (reference.getOneToMany().oneToOne()) {
-                                Object referenceEntity = getPropertyValue(entity, reference.getField().getName());
+                                Object referenceEntity = getPropertyValue(entity, tableMeta.getFieldPropertyNameMap().get(reference.getField()));
                                 if (Objects.nonNull(referenceEntity)) {
                                     list = Arrays.asList(referenceEntity);
                                 }
                             } else {
-                                list = (List<Object>)getPropertyValue(entity, reference.getField().getName());
+                                list = (List<Object>)getPropertyValue(entity, tableMeta.getFieldPropertyNameMap().get(reference.getField()));
                             }
 
                             String referenceColumnId = StringUtils.defaultIfBlank(reference.getOneToMany().joinColumnId(), tableMeta.getReferenceColumnId());
