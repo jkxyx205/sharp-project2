@@ -1,15 +1,23 @@
 spring:
   application:
     name: sharp-test
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/test
+#    username: postgres
+#    password:
   datasource:
-    url: jdbc:postgresql://localhost:5432/test
-    username: postgres
-    password: jkxyx@05
+    url: ${JDBC.URL}
+    username: ${JDBC.USERNAME}
+    password: ${JDBC.PASSWORD}
+  config:
+    import:
+      - optional:classpath:.env.postgres.properties
 
 sharp:
   database:
     type: PostgreSQL
     entity-base-package: com.rick.test.**.entity, com.rick.test.**.select
+    track-if-has-update: false
 
 logging:
   level:
