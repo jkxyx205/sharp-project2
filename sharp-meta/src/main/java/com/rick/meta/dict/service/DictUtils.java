@@ -55,6 +55,10 @@ final public class DictUtils {
      * @param obj
      */
     public static void fillDictLabel(Object obj) {
+        fillDictLabel(obj, Collections.newSetFromMap(new IdentityHashMap<>()));
+    }
+
+    private static void fillDictLabel(Object obj, Set<Object> visited) {
         if (obj == null) {
             return;
         }
@@ -65,16 +69,19 @@ final public class DictUtils {
             Iterator iterator = iterable.iterator();
             while (iterator.hasNext()) {
                 obj = iterator.next();
-                fillDictLabel(obj);
+                fillDictLabel(obj, visited);
             }
         } else if (Map.class.isAssignableFrom(obj.getClass())) {
             // Map
             Map map = (Map)obj;
-            fillDictLabel(map.keySet());
-            fillDictLabel(map.values());
+            fillDictLabel(map.keySet(), visited);
+            fillDictLabel(map.values(), visited);
         }
 
-       if (obj instanceof DictValue) {
+        // 已访问过，直接跳过，打破循环引用
+        if (!visited.add(obj)) return;
+
+        if (obj instanceof DictValue) {
             DictValue dictValue = (DictValue) obj;
             if (StringUtils.isNotBlank(dictValue.getCode()) && StringUtils.isNotBlank(dictValue.getType())) {
                 getDictLabel(dictValue.getType(), dictValue.getCode()).ifPresent(dict -> dictValue.setLabel(dict.getLabel()));
@@ -85,11 +92,8 @@ final public class DictUtils {
             return;
         }
 
-       Field[] allFields = FieldUtils.getAllFields(obj.getClass());
+        Field[] allFields = FieldUtils.getAllFields(obj.getClass());
         for (Field field : allFields) {
-//            Method method;
-//                method = obj.getClass().getMethod("get" + String.valueOf(field.getName().charAt(0)).toUpperCase() + field.getName().substring(1));
-//                Object fieldValue = ReflectionUtils.invokeMethod(method, obj);
             ReflectionUtils.makeAccessible(field);
             Object fieldValue = ReflectionUtils.getField(field, obj);
             if (fieldValue == null) {
@@ -128,18 +132,17 @@ final public class DictUtils {
                             ((DictValue)fieldValue).setType(dictType.type());
                         }
                     } else if (ObjectUtils.mayPureObject(fieldValue)) {
-                        fillDictLabel(fieldValue);
+                        fillDictLabel(fieldValue, visited);
                     }
                 }
             } else if (Map.class.isAssignableFrom(fieldValue.getClass())) {
                 // Map
                 Map map = (Map)fieldValue;
-                fillDictLabel(map.keySet());
-                fillDictLabel(map.values());
+                fillDictLabel(map.keySet(), visited);
+                fillDictLabel(map.values(), visited);
             } else if (ObjectUtils.mayPureObject(fieldValue)) {
-                fillDictLabel(fieldValue);
+                fillDictLabel(fieldValue, visited);
             }
-
         }
     }
 }
