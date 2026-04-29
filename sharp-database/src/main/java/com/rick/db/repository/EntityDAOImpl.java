@@ -105,29 +105,42 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
-    public List<T> selectAll() {
-        return select("");
-    }
-
-    @Override
-    public <S> Optional<S> selectById(ID id, String propertyName, Class<S> clazz) {
+    public <S> Optional<S> selectById(ID id, String columnName, Class<S> clazz) {
         Assert.notNull(id, "id cannot be null");
-        Assert.hasText(propertyName, "propertyName cannot be null");
-        List<S> values = select(clazz, tableMeta.getColumnNameByPropertyName(propertyName), tableMeta.getIdMeta().idColumnName() + " = ?", id);
+        Assert.hasText(columnName, "columnName cannot be null");
+        List<S> values = select(clazz, columnName, tableMeta.getIdMeta().idColumnName() + " = ?", id);
         return OperatorUtils.expectedAsOptional(values);
     }
 
     @Override
-    public <S> List<S> selectByIds(Collection<ID> ids, String propertyName, Class<S> clazz){
+    public <S> Map<ID, S> selectByIds(Collection<ID> ids, String columnName, Class<S> clazz){
         Assert.notEmpty(ids, "id cannot be null");
-        Assert.hasText(propertyName, "propertyName cannot be null");
-        List<S> values = select(clazz, tableMeta.getColumnNameByPropertyName(propertyName), tableMeta.getIdMeta().idColumnName() + " IN (:ids)", Map.of("ids", ids));
-        return values;
+        Assert.hasText(columnName, "columnName cannot be null");
+        return selectForKeyValue(tableMeta.getIdMeta().idColumnName() + ", " + columnName, tableMeta.getIdMeta().idColumnName() + " IN (:ids)", Map.of("ids", ids));
+    }
+
+    @Override
+    public <S> Optional<S> selectById(ID id, SFunction<T, S> function) {
+        List<T> list = selectWithoutCascade( "id, " + obtainColumnName(function), "id = ?", id);
+        return OperatorUtils.expectedAsOptional(list).map(function::apply);
+    }
+
+    @Override
+    public <S> Map<ID, S> selectByIds(Set<ID> ids, SFunction<T, S> function) {
+        List<T> list = selectWithoutCascade(tableMeta.getEntityClass(), "id, " + obtainColumnName(function), "id IN (:ids)",
+                Map.of("ids", ids));
+
+        return list.stream().collect(Collectors.toMap(t -> getIdValue(t), e -> function.apply(e)));
     }
 
     @Override
     public <K, V> Map<K, V> selectForKeyValue(String columns, String condition, Map<String, Object> paramMap) {
         return tableDAO.selectForKeyValue(tableMeta.getSelectSQL(columns) + SqlHelper.buildWhere(condition), paramMap);
+    }
+
+    @Override
+    public List<T> selectAll() {
+        return select("");
     }
 
     @Override
@@ -1032,19 +1045,6 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
         return OperatorUtils.expectedAsOptional(selectWithoutCascade("id = ?", new Object[]{id}));
     }
 
-    @Override
-    public <S> Map<ID, S> getPropertyByIds(Set<ID> ids, SFunction<T, S> function) {
-        List<T> list = selectWithoutCascade(tableMeta.getEntityClass(), "id, " + obtainColumnName(function), "id IN (:ids)",
-                Map.of("ids", ids));
-
-        return list.stream().collect(Collectors.toMap(t -> getIdValue(t), e -> function.apply(e)));
-    }
-
-    @Override
-    public <S> S getPropertyById(ID id, SFunction<T, S> function) {
-        List<T> list = selectWithoutCascade( "id, " + obtainColumnName(function), "id = ?", id);
-        return function.apply(OperatorUtils.expectedAsOptional(list).get());
-    }
 
     public List<T> selectWithoutCascade(String condition, Object... args) {
         return selectWithoutCascade(tableMeta.getSelectColumn(), condition, args);

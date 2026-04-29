@@ -12,21 +12,32 @@ import java.util.*;
  */
 public interface EntityCodeDAO<T, ID> extends EntityDAO<T, ID> {
 
+    Optional<T> selectByCode(@NotBlank String code);
+
+    List<T> selectByCodes(@NotEmpty Collection<String> codes);
+
     /**
-     * 获取 code 字段数据
+     * 根据 code & 字段 获取值
      * @param code
-     * @param propertyName
+     * @param columnName
      * @param clazz
      * @return
      * @param <S>
      */
-    <S> Optional<S> selectByCode(@NotBlank String code, @NotBlank String propertyName, Class<S> clazz);
+    <S> Optional<S> selectByCode(@NotBlank String code, @NotBlank String columnName, Class<S> clazz);
 
-    <S> List<S> selectByCodes(@NotEmpty Collection<String> codes, @NotBlank String propertyName, Class<S> clazz);
+    <S> Map<String, S> selectByCodes(@NotEmpty Collection<String> codes, @NotBlank String columnName, Class<S> clazz);
 
-    Optional<T> selectByCode(@NotBlank String code);
+    /**
+     * 根据 code & 属性 获取值
+     * @param code
+     * @param function
+     * @return
+     * @param <S>
+     */
+    <S> Optional<S> selectByCode(@NotBlank String code, SFunction<T, S> function);
 
-    List<T> selectByCodes(@NotEmpty Collection<String> codes);
+    <S> Map<String, S> selectByCodes(@NotEmpty Set<String> codes, SFunction<T, S> function);
 
     Optional<ID> selectIdByCode(@NotBlank String code);
 
@@ -35,9 +46,4 @@ public interface EntityCodeDAO<T, ID> extends EntityDAO<T, ID> {
     Map<String, ID> selectCodeIdMap(@NotEmpty Collection<String> codes);
 
     Optional<T> selectByCodeWithoutCascade(@NotBlank String code);
-
-    <S> Map<String, S> getPropertyByCodes(@NotEmpty Set<String> codes, SFunction<T, S> function);
-
-    <S> S getPropertyByCode(@NotBlank String code, SFunction<T, S> function);
-
 }

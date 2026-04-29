@@ -33,18 +33,23 @@ public class BaseServiceImpl<D extends EntityDAO<T, ID>, T extends EntityId<ID>,
     }
 
     @Override
-    public List<T> selectAll() {
-        return baseDAO.selectAll();
+    public <S> Optional<S> selectById(ID id, String columnName, Class<S> clazz) {
+        return baseDAO.selectById(id, columnName, clazz);
     }
 
     @Override
-    public <S> Optional<S> selectById(ID id, String propertyName, Class<S> clazz) {
-        return baseDAO.selectById(id, propertyName, clazz);
+    public <S> Map<ID, S> selectByIds(Collection<ID> ids, String columnName, Class<S> clazz) {
+        return baseDAO.selectByIds(ids, columnName, clazz);
     }
 
     @Override
-    public <S> List<S> selectByIds(Collection<ID> ids, String propertyName, Class<S> clazz) {
-        return baseDAO.selectByIds(ids, propertyName, clazz);
+    public <S> Optional<S> selectById(ID id, SFunction<T, S> function) {
+        return baseDAO.selectById(id, function);
+    }
+
+    @Override
+    public <S> Map<ID, S> selectByIds(Set<ID> ids, SFunction<T, S> function) {
+        return baseDAO.selectByIds(ids, function);
     }
 
     @Override
@@ -60,6 +65,11 @@ public class BaseServiceImpl<D extends EntityDAO<T, ID>, T extends EntityId<ID>,
     @Override
     public <K, V> Map<K, V> selectForKeyValue(String columns, String condition, T example) {
         return baseDAO.selectForKeyValue(columns, condition, example);
+    }
+
+    @Override
+    public List<T> selectAll() {
+        return baseDAO.selectAll();
     }
 
     @Override
@@ -340,16 +350,6 @@ public class BaseServiceImpl<D extends EntityDAO<T, ID>, T extends EntityId<ID>,
     @Override
     public Optional<T> selectByIdWithoutCascade(ID id) {
         return baseDAO.selectByIdWithoutCascade(id);
-    }
-
-    @Override
-    public <S> S getPropertyById(ID id, SFunction<T, S> function) {
-        return baseDAO.getPropertyById(id, function);
-    }
-
-    @Override
-    public <S> Map<ID, S> getPropertyByIds(Set<ID> ids, SFunction<T, S> function) {
-        return baseDAO.getPropertyByIds(ids, function);
     }
 
     @Override

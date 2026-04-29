@@ -19,16 +19,6 @@ public class BaseCodeServiceImpl<D extends EntityCodeDAO<T, ID>, T extends Entit
     }
 
     @Override
-    public <S> Optional<S> selectByCode(String code, String propertyName, Class<S> clazz) {
-        return baseDAO.selectByCode(code, propertyName, clazz);
-    }
-
-    @Override
-    public <S> List<S> selectByCodes(Collection<String> codes, String propertyName, Class<S> clazz) {
-        return baseDAO.selectByCodes(codes, propertyName, clazz);
-    }
-
-    @Override
     public Optional<T> selectByCode(String code) {
         return baseDAO.selectByCode(code);
     }
@@ -36,6 +26,26 @@ public class BaseCodeServiceImpl<D extends EntityCodeDAO<T, ID>, T extends Entit
     @Override
     public List<T> selectByCodes(Collection<String> codes) {
         return baseDAO.selectByCodes(codes);
+    }
+
+    @Override
+    public <S> Optional<S> selectByCode(String code, String columnName, Class<S> clazz) {
+        return baseDAO.selectByCode(code, columnName, clazz);
+    }
+
+    @Override
+    public <S> Map<String, S> selectByCodes(Collection<String> codes, String columnName, Class<S> clazz) {
+        return baseDAO.selectByCodes(codes, columnName, clazz);
+    }
+
+    @Override
+    public <S> Optional<S> selectByCode(String code, SFunction<T, S> function) {
+        return baseDAO.selectByCode(code, function);
+    }
+
+    @Override
+    public <S> Map<String, S> selectByCodes(Set<String> codes, SFunction<T, S> function) {
+        return baseDAO.selectByCodes(codes, function);
     }
 
     @Override
@@ -58,13 +68,4 @@ public class BaseCodeServiceImpl<D extends EntityCodeDAO<T, ID>, T extends Entit
         return baseDAO.selectByCodeWithoutCascade(code);
     }
 
-    @Override
-    public <S> Map<String, S> getPropertyByCodes(Set<String> codes, SFunction<T, S> function) {
-        return baseDAO.getPropertyByCodes(codes, function);
-    }
-
-    @Override
-    public <S> S getPropertyByCode(String code, SFunction<T, S> function) {
-        return baseDAO.getPropertyByCode(code, function);
-    }
 }

@@ -21,25 +21,36 @@ public interface EntityDAO<T, ID> {
 
     List<T> selectByIds(@NotEmpty Collection<ID> ids);
 
-    List<T> selectAll();
-
     /**
-     * 获取 id 字段数据
+     * 根据 id & 字段 获取值
      * @param id
-     * @param propertyName
+     * @param columnName
      * @param clazz
      * @return
      * @param <S>
      */
-    <S> Optional<S> selectById(@NotNull ID id, @NotBlank String propertyName, Class<S> clazz);
+    <S> Optional<S> selectById(@NotNull ID id, @NotBlank String columnName, Class<S> clazz);
 
-    <S> List<S> selectByIds(@NotEmpty Collection<ID> ids, @NotBlank String propertyName, Class<S> clazz);
+    <S> Map<ID, S> selectByIds(@NotEmpty Collection<ID> ids, @NotBlank String columnName, Class<S> clazz);
+
+    /**
+     * 根据 id & 属性 获取值
+     * @param id
+     * @param function
+     * @return
+     * @param <S>
+     */
+    <S> Optional<S> selectById(ID id, SFunction<T, S> function);
+
+    <S> Map<ID, S> selectByIds(Set<ID> ids, SFunction<T, S> function);
 
     <K, V> Map<K, V> selectForKeyValue(@NotBlank String columns, String condition, Map<String, Object> paramMap);
 
     <K, V> Map<K, V> selectForKeyValue(@NotBlank String columns, String condition, Object... args);
 
     <K, V> Map<K, V> selectForKeyValue(@NotBlank String columns, String condition, T example);
+
+    List<T> selectAll();
 
     List<T> select(String condition, Object... args);
 
@@ -163,10 +174,6 @@ public interface EntityDAO<T, ID> {
     Map<String, Object> entityToMap(T entity);
 
     Optional<T> selectByIdWithoutCascade(ID id);
-
-    <S> S getPropertyById(ID id, SFunction<T, S> function);
-
-    <S> Map<ID, S> getPropertyByIds(Set<ID> ids, SFunction<T, S> function);
 
     List<T> selectWithoutCascade(String condition, Object... args);
 

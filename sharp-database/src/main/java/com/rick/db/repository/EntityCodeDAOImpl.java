@@ -73,22 +73,6 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
     }
 
     @Override
-    public <S> Optional<S> selectByCode(String code, String propertyName, Class<S> clazz) {
-        Assert.hasText(code, "code cannot be null");
-        Assert.hasText(propertyName, propertyName);
-        List<S> values = select(clazz, getTableMeta().getColumnNameByPropertyName(propertyName), "code = ?", code);
-        return OperatorUtils.expectedAsOptional(values);
-    }
-
-    @Override
-    public <S> List<S> selectByCodes(Collection<String> codes, String propertyName, Class<S> clazz){
-        Assert.notEmpty(codes, "codes cannot be null");
-        Assert.hasText(propertyName, "propertyName cannot be null");
-        List<S> values = select(clazz, getTableMeta().getColumnNameByPropertyName(propertyName), "code IN (:codes)", Map.of("codes", codes));
-        return values;
-    }
-
-    @Override
     public Optional<T> selectByCode(String code) {
         return OperatorUtils.expectedAsOptional(select(CODE_COLUMN_NAME + " = :code", Map.of("code", code)));
     }
@@ -96,6 +80,35 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
     @Override
     public List<T> selectByCodes(Collection<String> codes) {
         return select("code IN(:codes)", Map.of("codes", codes));
+    }
+
+    @Override
+    public <S> Optional<S> selectByCode(String code, String columnName, Class<S> clazz) {
+        Assert.hasText(code, "code cannot be null");
+        Assert.hasText(columnName, "columnName cannot be null");
+        List<S> values = select(clazz, columnName, "code = ?", code);
+        return OperatorUtils.expectedAsOptional(values);
+    }
+
+    @Override
+    public <S> Map<String, S> selectByCodes(Collection<String> codes, String columnName, Class<S> clazz){
+        Assert.notEmpty(codes, "codes cannot be null");
+        Assert.hasText(columnName, "columnName cannot be null");
+        return selectForKeyValue("code, "+ columnName, "code IN (:codes)", Map.of("codes", codes));
+    }
+
+    @Override
+    public <S> Optional<S> selectByCode(String code, SFunction<T, S> function) {
+        List<T> list = selectWithoutCascade( "code, " + obtainColumnName(function), "code = ?", code);
+        return OperatorUtils.expectedAsOptional(list).map(function::apply);
+    }
+
+    @Override
+    public <S> Map<String, S> selectByCodes(Set<String> codes, SFunction<T, S> function) {
+        List<T> list = selectWithoutCascade(getTableMeta().getEntityClass(), "code, " + obtainColumnName(function), "code IN (:codes)",
+                Map.of("codes", codes));
+
+        return list.stream().collect(Collectors.toMap(t -> t.getCode(), e -> function.apply(e)));
     }
 
     @Override
@@ -116,20 +129,6 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
     @Override
     public Optional<T> selectByCodeWithoutCascade(String code) {
         return OperatorUtils.expectedAsOptional(selectWithoutCascade("code = ?", new Object[]{code}));
-    }
-
-    @Override
-    public <S> Map<String, S> getPropertyByCodes(Set<String> codes, SFunction<T, S> function) {
-        List<T> list = selectWithoutCascade(getTableMeta().getEntityClass(), "code, " + obtainColumnName(function), "code IN (:codes)",
-                Map.of("codes", codes));
-
-        return list.stream().collect(Collectors.toMap(t -> t.getCode(), e -> function.apply(e)));
-    }
-
-    @Override
-    public <S> S getPropertyByCode(String code, SFunction<T, S> function) {
-        List<T> list = selectWithoutCascade( "code, " + obtainColumnName(function), "code = ?", code);
-        return function.apply(OperatorUtils.expectedAsOptional(list).get());
     }
 
     @Override
