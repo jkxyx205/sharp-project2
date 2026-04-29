@@ -110,18 +110,18 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
-    public <S> Optional<S> selectById(ID id, String columnName, Class<S> clazz) {
+    public <S> Optional<S> selectById(ID id, String propertyName, Class<S> clazz) {
         Assert.notNull(id, "id cannot be null");
-        Assert.hasText(columnName, "columnName cannot be null");
-        List<S> values = select(clazz, columnName, tableMeta.getIdMeta().idColumnName() + " = ?", id);
+        Assert.hasText(propertyName, "propertyName cannot be null");
+        List<S> values = select(clazz, tableMeta.getColumnNameByPropertyName(propertyName), tableMeta.getIdMeta().idColumnName() + " = ?", id);
         return OperatorUtils.expectedAsOptional(values);
     }
 
     @Override
-    public <S> List<S> selectByIds(Collection<ID> ids, String columnName, Class<S> clazz){
+    public <S> List<S> selectByIds(Collection<ID> ids, String propertyName, Class<S> clazz){
         Assert.notEmpty(ids, "id cannot be null");
-        Assert.hasText(columnName, "columnName cannot be null");
-        List<S> values = select(clazz, columnName, tableMeta.getIdMeta().idColumnName() + " IN (:ids)", Map.of("ids", ids));
+        Assert.hasText(propertyName, "propertyName cannot be null");
+        List<S> values = select(clazz, tableMeta.getColumnNameByPropertyName(propertyName), tableMeta.getIdMeta().idColumnName() + " IN (:ids)", Map.of("ids", ids));
         return values;
     }
 
