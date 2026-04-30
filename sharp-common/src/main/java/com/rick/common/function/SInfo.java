@@ -6,6 +6,9 @@ package com.rick.common.function;
  */
 public interface SInfo {
 
+    // 方法引用时获取属性类型
+    Class<?> getPropertyType();
+
     // 是否是方法引用
     boolean isMethodReference();
 

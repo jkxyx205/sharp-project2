@@ -108,7 +108,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     public <S> Optional<S> selectById(ID id, String columnName, Class<S> clazz) {
         Assert.notNull(id, "id cannot be null");
         Assert.hasText(columnName, "columnName cannot be null");
-        List<S> values = select(clazz, columnName, tableMeta.getIdMeta().idColumnName() + " = ?", id);
+        List<S> values = selectWithoutCascade(clazz, columnName, tableMeta.getIdMeta().idColumnName() + " = ?", id);
         return OperatorUtils.expectedAsOptional(values);
     }
 
@@ -121,6 +121,8 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
     @Override
     public <S> Optional<S> selectById(ID id, SFunction<T, S> function) {
+//        String propertyName = function.getPropertyName();
+//        return selectById(id, getTableMeta().getColumnNameByPropertyName(propertyName), function.getPropertyType());
         List<T> list = selectWithoutCascade( "id, " + obtainColumnName(function), "id = ?", id);
         return OperatorUtils.expectedAsOptional(list).map(function::apply);
     }

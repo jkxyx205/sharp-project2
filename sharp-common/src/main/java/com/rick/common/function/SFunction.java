@@ -15,6 +15,10 @@ public interface SFunction<T, R> extends SInfo, Serializable {
         return SInfoHelper.getPropertyName(this);
     }
 
+    default Class getPropertyType() {
+        return SInfoHelper.getPropertyType(this);
+    }
+
     default boolean isMethodReference() {
         return SInfoHelper.isMethodReference(this);
     }

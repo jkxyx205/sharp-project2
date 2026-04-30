@@ -86,7 +86,7 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
     public <S> Optional<S> selectByCode(String code, String columnName, Class<S> clazz) {
         Assert.hasText(code, "code cannot be null");
         Assert.hasText(columnName, "columnName cannot be null");
-        List<S> values = select(clazz, columnName, "code = ?", code);
+        List<S> values = selectWithoutCascade(clazz, columnName, "code = ?", code);
         return OperatorUtils.expectedAsOptional(values);
     }
 
@@ -99,6 +99,8 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
 
     @Override
     public <S> Optional<S> selectByCode(String code, SFunction<T, S> function) {
+//        String propertyName = function.getPropertyName();
+//        return selectByCode(code, getTableMeta().getColumnNameByPropertyName(propertyName), function.getPropertyType());
         List<T> list = selectWithoutCascade( "code, " + obtainColumnName(function), "code = ?", code);
         return OperatorUtils.expectedAsOptional(list).map(function::apply);
     }
