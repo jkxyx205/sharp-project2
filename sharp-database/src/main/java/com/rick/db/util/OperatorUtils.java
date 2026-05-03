@@ -18,22 +18,27 @@ import java.util.stream.Collectors;
 @UtilityClass
 public class OperatorUtils {
 
+    @Deprecated
     public static <E> Optional<E> expectedAsOptional(List<E> list) {
         return CollectionOps.expectedAsOptional(list);
     }
 
     public static <ID, T extends EntityId<ID>> Map<ID, T> map(List<T> list) {
-        return list.stream().collect(Collectors.toMap(EntityId::getId, Function.identity()));
+         return list.stream().collect(Collectors.toMap(EntityId::getId, Function.identity()));
+//        return map(list, EntityId::getId);
     }
 
+    @Deprecated
     public static <R, T> Map<R, T> map(List<T> list, SFunction<T, R> function) {
         return CollectionOps.map(list, function);
     }
 
     public static <ID, T extends EntityId<ID>> Map<ID, List<T>> groupMap(List<T> list) {
-         return list.stream().collect(Collectors.groupingBy(EntityId::getId));
+          return list.stream().collect(Collectors.groupingBy(EntityId::getId));
+//        return groupMap(list, EntityId::getId);
     }
 
+    @Deprecated
     public static <R, T> Map<R, List<T>> groupMap(List<T> list, SFunction<T, R> function) {
         return CollectionOps.groupMap(list, function);
     }
