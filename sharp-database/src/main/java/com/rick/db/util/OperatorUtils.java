@@ -1,11 +1,9 @@
 package com.rick.db.util;
 
 import com.rick.common.function.SFunction;
+import com.rick.common.util.CollectionOps;
 import com.rick.db.repository.model.EntityId;
 import lombok.experimental.UtilityClass;
-import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.beans.BeanWrapperImpl;
-import org.springframework.dao.IncorrectResultSizeDataAccessException;
 
 import java.util.List;
 import java.util.Map;
@@ -21,15 +19,7 @@ import java.util.stream.Collectors;
 public class OperatorUtils {
 
     public static <E> Optional<E> expectedAsOptional(List<E> list) {
-        if (CollectionUtils.isEmpty(list)) {
-            return Optional.empty();
-        }
-
-        if (list.size() > 1) {
-            throw new IncorrectResultSizeDataAccessException(1, list.size());
-        }
-
-        return Optional.ofNullable(list.get(0));
+        return CollectionOps.expectedAsOptional(list);
     }
 
     public static <ID, T extends EntityId<ID>> Map<ID, T> map(List<T> list) {
@@ -37,7 +27,7 @@ public class OperatorUtils {
     }
 
     public static <R, T> Map<R, T> map(List<T> list, SFunction<T, R> function) {
-        return list.stream().collect(Collectors.toMap(t -> function.isMethodReference() ? (R) new BeanWrapperImpl(t).getPropertyValue(function.getPropertyName()) : function.apply(t), Function.identity()));
+        return CollectionOps.map(list, function);
     }
 
     public static <ID, T extends EntityId<ID>> Map<ID, List<T>> groupMap(List<T> list) {
@@ -45,6 +35,6 @@ public class OperatorUtils {
     }
 
     public static <R, T> Map<R, List<T>> groupMap(List<T> list, SFunction<T, R> function) {
-        return list.stream().collect(Collectors.groupingBy(t -> function.isMethodReference() ? (R) new BeanWrapperImpl(t).getPropertyValue(function.getPropertyName()) : function.apply(t)));
+        return CollectionOps.groupMap(list, function);
     }
 }
