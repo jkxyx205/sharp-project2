@@ -14,8 +14,10 @@ import java.util.stream.Collectors;
 /**
  * @author Rick.Xu
  * @date 2023/7/29 16:45
+ * 可用 DataAccessUtils 替代
  */
 @UtilityClass
+@Deprecated
 public class OperatorUtils {
 
     @Deprecated

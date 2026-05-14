@@ -32,11 +32,11 @@ public class CollectionOps {
         return Optional.ofNullable(collection.iterator().next());
     }
 
-    public static <R, T> Map<R, T> map(Collection<T> list, SFunction<T, R> function) {
-        return list.stream().collect(Collectors.toMap(t -> function.isMethodReference() ? (R) new BeanWrapperImpl(t).getPropertyValue(function.getPropertyName()) : function.apply(t), Function.identity()));
+    public static <R, T> Map<R, T> map(Collection<T> collection, SFunction<T, R> function) {
+        return collection.stream().collect(Collectors.toMap(t -> function.isMethodReference() ? (R) new BeanWrapperImpl(t).getPropertyValue(function.getPropertyName()) : function.apply(t), Function.identity()));
     }
 
-    public static <R, T> Map<R, List<T>> groupMap(Collection<T> list, SFunction<T, R> function) {
-        return list.stream().collect(Collectors.groupingBy(t -> function.isMethodReference() ? (R) new BeanWrapperImpl(t).getPropertyValue(function.getPropertyName()) : function.apply(t)));
+    public static <R, T> Map<R, List<T>> groupMap(Collection<T> collection, SFunction<T, R> function) {
+        return collection.stream().collect(Collectors.groupingBy(t -> function.isMethodReference() ? (R) new BeanWrapperImpl(t).getPropertyValue(function.getPropertyName()) : function.apply(t)));
     }
 }
