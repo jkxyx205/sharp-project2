@@ -1,5 +1,6 @@
 package com.rick.db.repository.support.category;
 
+import com.rick.common.function.SFunction;
 import com.rick.common.http.exception.BizException;
 import com.rick.db.repository.EntityCodeDAOImpl;
 import com.rick.db.repository.model.EntityIdCode;
@@ -87,6 +88,13 @@ public class CategoryEntityCodeDAOImpl<T extends EntityIdCode<ID> & RowCategory<
 
     public Optional<T> selectByCategoryAndCode(@NotNull E category, @NotBlank String code) {
         return OperatorUtils.expectedAsOptional(select("code = ? AND "+categoryColumnName+" = ?", code, getValue(category)));
+    }
+
+    public <S> Optional<S> selectByCategoryAndCode(@NotNull E category, @NotBlank String code, SFunction<T, S> function) {
+//        String propertyName = function.getPropertyName();
+//        return selectByCode(code, getTableMeta().getColumnNameByPropertyName(propertyName), function.getPropertyType());
+        List<T> list = selectWithoutCascade( "code, " + obtainColumnName(function), categoryColumnName + " = ? AND code = ?", category, code);
+        return OperatorUtils.expectedAsOptional(list).map(function::apply);
     }
 
     public List<T> selectAll(@NotNull E category) {
