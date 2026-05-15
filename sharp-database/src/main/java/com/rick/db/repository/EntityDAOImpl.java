@@ -123,13 +123,14 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     public <S> Optional<S> selectById(ID id, SFunction<T, S> function) {
 //        String propertyName = function.getPropertyName();
 //        return selectById(id, getTableMeta().getColumnNameByPropertyName(propertyName), function.getPropertyType());
-        List<T> list = selectWithoutCascade( "id, " + obtainColumnName(function), "id = ?", id);
+//        List<T> list = selectWithoutCascade( "id, " + obtainColumnName(function), "id = ?", id);
+        List<T> list = selectWithoutCascade(obtainColumnName(function), "id = ?", id);
         return OperatorUtils.expectedAsOptional(list).map(function::apply);
     }
 
     @Override
     public <S> Map<ID, S> selectByIds(Set<ID> ids, SFunction<T, S> function) {
-        List<T> list = selectWithoutCascade(tableMeta.getEntityClass(), "id, " + obtainColumnName(function), "id IN (:ids)",
+        List<T> list = selectWithoutCascade(tableMeta.getEntityClass(), tableMeta.getIdMeta().idColumnName() + ", " + obtainColumnName(function), "id IN (:ids)",
                 Map.of("ids", ids));
 
         return list.stream().collect(Collectors.toMap(t -> getIdValue(t), e -> function.apply(e)));

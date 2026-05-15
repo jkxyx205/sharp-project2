@@ -101,7 +101,8 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
     public <S> Optional<S> selectByCode(String code, SFunction<T, S> function) {
 //        String propertyName = function.getPropertyName();
 //        return selectByCode(code, getTableMeta().getColumnNameByPropertyName(propertyName), function.getPropertyType());
-        List<T> list = selectWithoutCascade( "code, " + obtainColumnName(function), "code = ?", code);
+//        List<T> list = selectWithoutCascade( "code, " + obtainColumnName(function), "code = ?", code);
+        List<T> list = selectWithoutCascade(obtainColumnName(function), "code = ?", code);
         return OperatorUtils.expectedAsOptional(list).map(function::apply);
     }
 
