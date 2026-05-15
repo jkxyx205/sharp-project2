@@ -93,8 +93,14 @@ public class CategoryEntityCodeDAOImpl<T extends EntityIdCode<ID> & RowCategory<
     public <S> Optional<S> selectByCategoryAndCode(@NotNull E category, @NotBlank String code, SFunction<T, S> function) {
 //        String propertyName = function.getPropertyName();
 //        return selectByCode(code, getTableMeta().getColumnNameByPropertyName(propertyName), function.getPropertyType());
-        List<T> list = selectWithoutCascade( "code, " + obtainColumnName(function), categoryColumnName + " = ? AND code = ?", category, code);
+//        List<T> list = selectWithoutCascade( "code, " + obtainColumnName(function), categoryColumnName + " = ? AND code = ?", category, code);
+        List<T> list = selectWithoutCascade(obtainColumnName(function), categoryColumnName + " = ? AND code = ?", category, code);
         return OperatorUtils.expectedAsOptional(list).map(function::apply);
+    }
+
+    public <S> Optional<S> selectByCategoryAndCode(@NotNull E category, @NotBlank String code, String columnName, Class<S> clazz) {
+        List<S> list = selectWithoutCascade(clazz, columnName, categoryColumnName + " = ? AND code = ?", category, code);
+        return OperatorUtils.expectedAsOptional(list);
     }
 
     public List<T> selectAll(@NotNull E category) {
