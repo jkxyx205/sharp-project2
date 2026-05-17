@@ -115,6 +115,9 @@ public class UserTest2 {
                 .build();
 
         userService.saveOrUpdate(user);
+
+        int affectRows = userDAO.updateByIdWithPropertyNames("id, name", userId, user);
+        assertEquals(1, affectRows, "名字修改不成功");
     }
 
     @Test

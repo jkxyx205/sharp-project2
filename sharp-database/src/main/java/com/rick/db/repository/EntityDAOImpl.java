@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 import static com.rick.db.repository.EntityDAOManager.localStack;
 import static com.rick.db.repository.EntityDAOManager.threadLocalEntity;
 import static com.rick.db.repository.support.Constants.COLUMN_NAME_SEPARATOR_REGEX;
+import static com.rick.db.repository.support.Constants.PARAM_IN_SEPARATOR;
 
 /**
  * @author Rick.Xu
@@ -989,6 +990,12 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
+    public int updateByIdWithPropertyNames(String propertyNames, ID id, T example) {
+        String columns = propertyNamesToColumns(propertyNames);
+        return updateById(columns, id, example);
+    }
+
+    @Override
     public int updateByIds(String columns, Collection<ID> ids, Map<String, Object> paramMap) {
         Map<String, Object> args = new LinkedHashMap<>(paramMap);
         args.put("ids", ids);
@@ -998,6 +1005,12 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     @Override
     public int updateByIds(String columns, Collection<ID> ids, T example) {
         return updateByIds(columns, ids, getArgsFromEntity(example, true));
+    }
+
+    @Override
+    public int updateByIdsWithPropertyNames(String propertyNames, Collection<ID> ids, T example) {
+        String columns = propertyNamesToColumns(propertyNames);
+        return updateByIds(columns, ids, example);
     }
 
     @Override
@@ -1039,6 +1052,12 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
+    public int updateWithPropertyNames(String propertyNames, String condition, T example) {
+        String columns = propertyNamesToColumns(propertyNames);
+        return update(columns, condition, getArgsFromEntity(example, true));
+    }
+
+    @Override
     public int[] batchUpdate(String columns, String condition, List<Object[]> paramsList) {
         return tableDAO.batchUpdate(tableMeta.getTableName(), tableMeta.appendColumnVar(columns, false), condition, paramsList);
     }
@@ -1061,6 +1080,10 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     protected  <S> String obtainColumnName(SFunction<T, S> function) {
         String propertyName = function.getPropertyName();
         return tableMeta.getColumnNameByPropertyName(propertyName) + " AS \""+propertyName+"\"";
+    }
+
+    private String propertyNamesToColumns(String propertyNames) {
+        return Arrays.stream(propertyNames.split(COLUMN_NAME_SEPARATOR_REGEX)).map(propertyName -> tableMeta.getColumnNameByPropertyName(propertyName)).collect(Collectors.joining(PARAM_IN_SEPARATOR));
     }
 
     private void setIdValue(Object entity, Object id) {
