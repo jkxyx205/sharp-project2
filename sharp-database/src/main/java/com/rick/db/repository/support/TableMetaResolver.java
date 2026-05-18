@@ -23,7 +23,7 @@ public class TableMetaResolver {
             return null;
         }
 
-        TableMeta tableMeta = new TableMeta(entityClass, tableAnnotation, StringUtils.isNotBlank(tableAnnotation.value()) ? tableAnnotation.value() : com.rick.common.util.StringUtils.camelToSnake(entityClass.getSimpleName()), com.rick.common.util.StringUtils.camelToSnake(entityClass.getSimpleName()) + "_id",
+        TableMeta tableMeta = new TableMeta(entityClass, tableAnnotation, StringUtils.isNotBlank(tableAnnotation.value()) ? tableAnnotation.value() : com.rick.common.util.StringUtils.camelToSnake(entityClass.getSimpleName()), StringUtils.defaultString(tableAnnotation.referenceColumnId(), com.rick.common.util.StringUtils.camelToSnake(entityClass.getSimpleName()) + "_id"),
                 new HashMap<>(), new IdentityHashMap<>(), new IdentityHashMap<>(), new HashMap<>(), new HashMap<>());
 
         StringBuilder selectColumnBuilder = new StringBuilder();
@@ -56,7 +56,7 @@ public class TableMetaResolver {
                     reference.select = select;
                     reference.field = field;
                     if (Collection.class.isAssignableFrom(field.getType())) {
-                        reference.referenceClass = ClassUtils.getFieldGenericClass(field)[0];
+                        reference.referenceClass = ClassUtils.getFieldGenericClass(entityClass, field)[0];
                     } else {
                         reference.referenceClass = field.getType();
                     }
@@ -71,20 +71,19 @@ public class TableMetaResolver {
             OneToMany oneToMany = field.getAnnotation(OneToMany.class);
             ManyToOne manyToOne = field.getAnnotation(ManyToOne.class);
 
-
             if (Objects.nonNull(manyToMany) || Objects.nonNull(manyToOne) || Objects.nonNull(oneToMany) || Objects.nonNull(select)) {
                 TableMeta.Reference reference = new TableMeta.Reference();
                 reference.field = field;
 
                 if (Objects.nonNull(manyToMany)) {
                     reference.manyToMany = manyToMany;
-                    reference.referenceClass = ClassUtils.getFieldGenericClass(field)[0];
+                    reference.referenceClass = ClassUtils.getFieldGenericClass(entityClass, field)[0];
                 } else if (Objects.nonNull(oneToMany)) {
                     reference.oneToMany = oneToMany;
                     if (oneToMany.oneToOne()) {
                         reference.referenceClass = field.getType();
                     } else {
-                        reference.referenceClass = ClassUtils.getFieldGenericClass(field)[0];
+                        reference.referenceClass = ClassUtils.getFieldGenericClass(entityClass, field)[0];
                     }
                 } else if (Objects.nonNull(manyToOne)) {
                     reference.manyToOne = manyToOne;
@@ -93,7 +92,7 @@ public class TableMetaResolver {
                 } else if (Objects.nonNull(select)) {
                     reference.select = select;
                     if (Collection.class.isAssignableFrom(field.getType())) {
-                        reference.referenceClass = ClassUtils.getFieldGenericClass(field)[0];
+                        reference.referenceClass = ClassUtils.getFieldGenericClass(entityClass, field)[0];
                     } else {
                         reference.referenceClass = field.getType();
                     }
