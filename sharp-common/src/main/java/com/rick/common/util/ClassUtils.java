@@ -18,6 +18,17 @@ import java.util.Objects;
 public class ClassUtils {
 
     /**
+     * 获取字段的范型类型
+     * @param field
+     * @return
+     */
+    @Deprecated
+    public static Class<?>[] getFieldGenericClass(Field field) {
+        Type[] type = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
+        return typeToClass(null, type);
+    }
+
+    /**
      * public class OrderEntity<T extends ItemEntity> extends BaseCodeDescriptionEntity<Long> {
      *     @Valid
      *     @Size(min = 1)
@@ -40,16 +51,6 @@ public class ClassUtils {
     public static Class<?>[] getFieldGenericClass(Class<?> subClass, Field field) {
         Type[] type = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
         return typeToClass(subClass, type);
-    }
-
-    /**
-     * 获取字段的范型类型
-     * @param field
-     * @return
-     */
-    public static Class<?>[] getFieldGenericClass(Field field) {
-        Type[] type = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
-        return typeToClass(null, type);
     }
 
     /**

@@ -52,7 +52,7 @@ public class EnumJsonDeserializer extends JsonDeserializer<Enum> {
                 Object currentValue = jsonParser.getParsingContext().getParent().getCurrentValue();
                 String currentName = jsonParser.getParsingContext().getParent().getCurrentName();
                 field = ClassUtils.getField(currentValue.getClass(), currentName);
-                Class<?>[] fieldGenericClass = ClassUtils.getFieldGenericClass(field);
+                Class<?>[] fieldGenericClass = ClassUtils.getFieldGenericClass(currentValue.getClass(), field);
                 value = EnumUtils.valueOfCode(fieldGenericClass[0], code);
             }
 
