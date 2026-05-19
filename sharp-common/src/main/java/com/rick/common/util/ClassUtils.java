@@ -49,8 +49,27 @@ public class ClassUtils {
      * @return
      */
     public static Class<?>[] getFieldGenericClass(Class<?> subClass, Field field) {
-        Type[] type = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
-        return typeToClass(subClass, type);
+        // 1. 获取字段类型
+        Type fieldType = field.getGenericType();
+
+        // 2. 已经是具体类型，直接返回
+        if (fieldType instanceof Class<?> clazz) {
+            return new Class<?>[] {clazz};
+        }
+
+        // 3. 字段本身就是 TypeVariable，如 private T item
+        if (fieldType instanceof TypeVariable<?> typeVar) {
+            Class<?> clazz = resolveTypeVariable(subClass, typeVar);// ✅ T → 实际类型
+            return new Class<?>[] {clazz};
+        }
+
+        // 4. List<T> 或 List<PurchaseOrder.Item> 这种带泛型的类型
+        if (fieldType instanceof ParameterizedType pt) {
+            Type[] type = pt.getActualTypeArguments();
+            return typeToClass(subClass, type);
+        }
+
+        throw new IllegalArgumentException("Cannot resolve type for field: " + field.getName());
     }
 
     /**
@@ -186,7 +205,6 @@ public class ClassUtils {
             } else if (type instanceof ParameterizedType) {
                 // List<String> → raw type = List.class
                 classes[i] = (Class<?>) ((ParameterizedType) type).getRawType();
-
             } else if (type instanceof TypeVariable<?>) {
                 if (Objects.nonNull(subClass)) {
                     classes[i] = resolveTypeVariable(subClass, (TypeVariable)type);
@@ -216,35 +234,41 @@ public class ClassUtils {
     }
 
     private static Class<?> resolveTypeVariable(Class<?> subClass, TypeVariable<?> typeVar) {
-        // typeVar 声明在哪个类上（OrderEntity），找到它的位置 index
-        Class<?> declaringClass = (Class<?>) typeVar.getGenericDeclaration();
+        Class<?> declaringClass = (Class)typeVar.getGenericDeclaration();
         TypeVariable<?>[] typeParams = declaringClass.getTypeParameters();
-
         int index = -1;
-        for (int i = 0; i < typeParams.length; i++) {
+
+        for(int i = 0; i < typeParams.length; ++i) {
             if (typeParams[i].getName().equals(typeVar.getName())) {
                 index = i;
                 break;
             }
         }
 
-        // 从 subClass 向上找，直到找到 extends declaringClass<XxxType> 的那一层
-        Class<?> current = subClass;
-        while (current != null) {
-            Type genericSuper = current.getGenericSuperclass();
-            if (genericSuper instanceof ParameterizedType pt) {
-                if (pt.getRawType().equals(declaringClass)) {
-                    // 找到了 PurchaseOrder extends OrderEntity<PurchaseOrder.Item>
-                    Type actualType = pt.getActualTypeArguments()[index];
-                    if (actualType instanceof Class<?> clazz) {
-                        return clazz; // ✅ PurchaseOrder.Item
+        if (index == -1) {
+            throw new IllegalArgumentException("TypeVariable not found: " + typeVar);
+        } else {
+            for(Class<?> current = subClass; current != null; current = current.getSuperclass()) {
+                Type genericSuper = current.getGenericSuperclass();
+                if (genericSuper instanceof ParameterizedType) {
+                    ParameterizedType pt = (ParameterizedType)genericSuper;
+                    if (pt.getRawType().equals(declaringClass)) {
+                        Type actualType = pt.getActualTypeArguments()[index];
+                        if (actualType instanceof Class) {
+                            Class<?> clazz = (Class)actualType;
+                            return clazz;
+                        }
+
+                        if (actualType instanceof TypeVariable) {
+                            TypeVariable<?> nextTypeVar = (TypeVariable)actualType;
+                            return resolveTypeVariable(subClass, nextTypeVar);
+                        }
                     }
                 }
             }
-            current = current.getSuperclass();
-        }
 
-        throw new IllegalArgumentException("Cannot resolve TypeVariable: " + typeVar);
+            throw new IllegalArgumentException("Cannot resolve TypeVariable: " + typeVar);
+        }
     }
 
     private static Class<?> resolveToClass(Type type) {
