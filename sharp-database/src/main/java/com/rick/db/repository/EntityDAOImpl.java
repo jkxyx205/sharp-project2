@@ -336,7 +336,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
             threadLocalEntity.get().addAll(list);
             Set<ID> ids = list.stream().map(t -> getIdValue(t)).collect(Collectors.toSet());
 
-            List<?> referenceList;
+            List<Object> referenceList;
             for (Map.Entry<Field, TableMeta.Reference> fieldReferenceEntry : tableMeta.getReferenceMap().entrySet()) {
                 TableMeta.Reference reference = fieldReferenceEntry.getValue();
 
