@@ -1,12 +1,12 @@
 package com.rick.db.repository.support;
 
+import java.lang.annotation.*;
+
 /**
  * @author Rick.Xu
  * @date 2025/11/26 12:11
+ * 忽略 fill code
  */
-
-import java.lang.annotation.*;
-
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.FIELD})
