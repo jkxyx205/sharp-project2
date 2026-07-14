@@ -72,4 +72,10 @@ public class CodeDescriptionTest {
         codeDescriptionDAO.update(CodeDescription.builder().code("M2").description("物料组-22").category(CodeDescription.CategoryEnum.MATERIAL).sort(0).build());
     }
 
+    @Test
+    public void getInsertSql() {
+        String insertSQL = codeDescriptionDAO.getTableMeta().getInsertSQL();
+        System.out.println(insertSQL);
+    }
+
 }

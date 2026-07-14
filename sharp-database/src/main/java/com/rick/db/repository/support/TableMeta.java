@@ -137,10 +137,21 @@ public class TableMeta<T> {
         return SqlHelper.buildSelect(getTableName(), columns);
     }
 
+    public String getInsertSQL() {
+        String[] columnNameArray = getColumnNameArray();
+        String insertColumnNames = Arrays.stream(columnNameArray).filter(columnName -> {
+            if (Objects.equals(idMeta.idColumnName, columnName)) {
+                if (idMeta.id.strategy() != Id.GenerationType.IDENTITY) {
+                    return true;
+                }
+                return false;
+            }
 
-//    public String getInsertSQL() {
-//        return SqlHelper.getInsertSQL(tableName, getSelectColumn());
-//    }
+            return true;
+        }).collect(Collectors.joining(", "));
+
+        return SqlHelper.getInsertSQL(tableName, insertColumnNames, appendColumnVar(insertColumnNames, false, ", ", false));
+    }
 
     public String appendColumnVar(String columns, boolean namedVar) {
         return appendColumnVar(columns, namedVar, ", ");

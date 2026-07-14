@@ -27,14 +27,11 @@ public class SqlHelper {
     }
 
     public static String getInsertSQL(String tableName, String columnNames) {
-        return String.format("INSERT INTO %s (%s) VALUES(%s)",
-                tableName,
-                columnNames,
-                StringUtils.join(Collections.nCopies(columnNames.split(COLUMN_NAME_SEPARATOR_REGEX).length, "?"), ", "));
+        return getInsertSQL(tableName, columnNames, StringUtils.join(Collections.nCopies(columnNames.split(COLUMN_NAME_SEPARATOR_REGEX).length, "?"), ", "));
     }
 
     public static String getInsertSQL(String tableName, String columnNames, String columnsCondition) {
-        return String.format("INSERT INTO %s (%s) VALUES(%s)",
+        return String.format("INSERT INTO %s (%s) VALUES (%s)",
                 tableName,
                 columnNames,
                 columnsCondition);
