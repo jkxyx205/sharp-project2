@@ -7,6 +7,7 @@ import com.rick.common.util.ClassUtils;
 import com.rick.common.util.EnumUtils;
 import com.rick.common.util.IdGenerator;
 import com.rick.common.util.JsonUtils;
+import com.rick.common.validate.ValidatorHelper;
 import com.rick.db.config.Context;
 import com.rick.db.repository.model.DatabaseType;
 import com.rick.db.repository.model.EntityId;
@@ -66,6 +67,9 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
     @Getter
     private TableMeta<T> tableMeta;
+
+    @Resource
+    private ValidatorHelper validatorHelper;
 
     @Autowired(required = false)
     private InsertUpdateCallback insertUpdateCallback;
@@ -656,7 +660,10 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
             if (!Objects.equals(entry.getValue(), tableMeta.getIdMeta().idColumnName())) {
                 Object value = getPropertyValue(entity, propertyName);
                 if (Objects.nonNull(value)) {
-                    patchColumns.add(entry.getKey());
+                    if (Arrays.stream(tableMeta.getUpdateColumnArray()).anyMatch(s -> s.equals(entry.getKey()))) {
+                        validatorHelper.validateProperty(entity, propertyName);
+                        patchColumns.add(entry.getKey());
+                    }
                 }
             }
         }
