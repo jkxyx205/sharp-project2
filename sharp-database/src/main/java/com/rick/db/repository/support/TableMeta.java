@@ -68,6 +68,8 @@ public class TableMeta<T> {
 
     private String[] columnNameArrayCache;
 
+    private String[] updateColumnArrayCache;
+
     private Map<String, Field> columnNameFieldMapCache = new HashMap<>();
 
     private Map<String, Field> propertyNameFieldMapCache = new HashMap<>();
@@ -119,6 +121,13 @@ public class TableMeta<T> {
             columnNameArrayCache = columnNames.split(COLUMN_NAME_SEPARATOR_REGEX);
         }
         return columnNameArrayCache;
+    }
+
+    public String[] getUpdateColumnArray() {
+        if (Objects.isNull(updateColumnArrayCache)) {
+            updateColumnArrayCache = updateColumn.split(COLUMN_NAME_SEPARATOR_REGEX);
+        }
+        return updateColumnArrayCache;
     }
 
     public String getConditionSQL() {
