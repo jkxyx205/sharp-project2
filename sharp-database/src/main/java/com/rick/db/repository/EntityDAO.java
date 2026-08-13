@@ -76,10 +76,10 @@ public interface EntityDAO<T, ID> {
     /**
      * null值会通过 is null 放到条件语句中
      * @param example
-     * @param nullColunmPredicate
+     * @param nullColumnPredicate
      * @return
      */
-    List<T> select(T example, Predicate<String> nullColunmPredicate);
+    List<T> select(T example, Predicate<String> nullColumnPredicate);
 
     List<T> select(String condition, T example);
 
@@ -123,7 +123,7 @@ public interface EntityDAO<T, ID> {
 
     T update(@Valid @NotNull T entity);
 
-    T patch(@Valid @NotNull T entity);
+    T patch(@NotNull T entity);
 
     T insertOrUpdate(@Valid @NotNull T entity);
 

@@ -220,7 +220,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     }
 
     @Override
-    public List<T> select(T example, Predicate<String> nullColunmPredicate) {
+    public List<T> select(T example, Predicate<String> nullColumnPredicate) {
         Map<String, Object> paramMap = new HashMap<>();
         StringBuilder conditionColumnBuilder = new StringBuilder();
         StringBuilder conditionNullColumnBuilder = new StringBuilder();
@@ -231,7 +231,7 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
                 paramMap.put(tableMeta.getFieldPropertyNameMap().get(entry.getKey()), value);
                 conditionColumnBuilder.append(entry.getValue()).append(",");
             } else {
-                if (nullColunmPredicate.test(entry.getValue()))
+                if (nullColumnPredicate.test(entry.getValue()))
                     conditionNullColumnBuilder.append(" AND ").append(entry.getValue()).append(" IS NULL");
             }
         }

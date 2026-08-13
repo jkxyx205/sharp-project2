@@ -113,8 +113,8 @@ public class BaseServiceImpl<D extends EntityDAO<T, ID>, T extends EntityId<ID>,
     }
 
     @Override
-    public List<T> select(T example, Predicate<String> nullColunmPredicate) {
-        return baseDAO.select(example, nullColunmPredicate);
+    public List<T> select(T example, Predicate<String> nullColumnPredicate) {
+        return baseDAO.select(example, nullColumnPredicate);
     }
 
     @Override
