@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -143,6 +144,10 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
             Pattern.compile("\\b(order\\s+by|group\\s+by|limit)\\b", Pattern.CASE_INSENSITIVE);
 
     public String addIsDeletedCondition(String sql) {
+        return addIsDeletedCondition(sql, () -> "");
+    }
+
+    public String addIsDeletedCondition(String sql, Supplier<String> additionalConditionSupplier) {
         if (StringUtils.isBlank(sql) || hasIsDeletedCondition(sql)) {
             return sql;
         }
@@ -164,7 +169,7 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
             }
             // 在 WHERE 子句中加 AND is_deleted = false
             return new StringBuilder(trimmedSql)
-                    .insert(insertPos, " AND "+LOGIC_DELETE_COLUMN_NAME+" = false ")
+                    .insert(insertPos, " AND "+LOGIC_DELETE_COLUMN_NAME+" = false "+additionalConditionSupplier.get()+" ")
                     .toString();
         } else {
             // 没有 WHERE，插入 WHERE is_deleted = false
@@ -173,7 +178,7 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
                 insertPos = clauseMatcher.start();
             }
             return new StringBuilder(trimmedSql)
-                    .insert(insertPos, " WHERE "+LOGIC_DELETE_COLUMN_NAME+" = false ")
+                    .insert(insertPos, " WHERE "+LOGIC_DELETE_COLUMN_NAME+" = false "+additionalConditionSupplier.get()+" ")
                     .toString();
         }
     }
