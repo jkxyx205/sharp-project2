@@ -308,8 +308,10 @@ DAO 子类可覆写的 protected 钩子（`EntityDAOImpl`）：
 - DAO 父类（按实体基类选择，均 ⭐）：
   - `CategoryEntityDAOImpl<T extends EntityId<ID> & RowCategory<E>, ID, E>`：无 code 唯一性约束的分组表。
   - `CategoryEntityCodeDAOImpl<T extends EntityIdCode<ID> & RowCategory<E>, ID, E>`：**code 在分类内唯一**（insert/update 查重条件 `code = ? AND category = ?`），提供 `selectByCategoryAndCode(...)` 三个重载、按 category+code 回填 id。
-  - `CategoryEnumEntityDAOImpl` / `CategoryEnumEntityCodeDAOImpl`：E 限定为枚举的别名子类（存储值 = `枚举.toString()`）。
-- 构造参数 `categoryColumnName` 默认 `"category"`，列名不同时子类构造传入（javadoc 示例：`super("plant_code")`）。
+  - `CategoryEnumEntityDAOImpl<T extends EntityId<ID> & RowCategory<E>, ID, E extends Enum<E>>`：把 `E` 收紧为枚举（存储值 = `枚举.toString()`），实体**仅 id、无 code**，边界与其父类 `CategoryEntityDAOImpl` 一致。
+  - `CategoryEnumEntityCodeDAOImpl<T extends EntityIdCode<ID> & RowCategory<E>, ID, E extends Enum<E>>`：同上但实体为 **id + code**，继承 `CategoryEntityCodeDAOImpl` 的 code 分类内唯一等能力。
+  - 选型即「实体是否带 code」×「分类是否为枚举」四格；两个 `*Enum*` 子类除收紧 `E` 外，能力与对应非 Enum 版一致。
+- 构造参数 `categoryColumnName` 默认 `"category"`，列名不同时子类构造传入（javadoc 示例：`super("plant_code")`）。**四个父类均提供 `()` 与 `(String categoryColumnName)` 两个构造器**——两个 `*Enum*` 变体的 `(String)` 构造器是近期补上的，此前它们只有隐式无参构造器，业务子类**无法**自定义分类列名（写 `super("plant_code")` 编译不过），只能用默认的 `category` 列。
 - 核心方法：
   - `void insertOrUpdate(E category, Collection<T> list[, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer])`：给每行 setCategory 后做**分类范围内**的整表同步（内部走五参 `insertOrUpdateTable`）。
   - `List<T> selectAll(E category)`：按分类查全部。

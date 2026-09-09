@@ -58,7 +58,8 @@ public interface RowCategory<T> {
 |---|---|
 | `EntityIdCode`/`BaseCodeEntity`/`BaseCodeDescriptionEntity` + 枚举分类 | `CategoryEnumEntityCodeDAOImpl<T, ID, E extends Enum<E>>` |
 | 同上 + 动态（非枚举）分类 | `CategoryEntityCodeDAOImpl<T, ID, E>` |
-| `EntityId`（无 code）+ 分类 | `CategoryEntityDAOImpl` / `CategoryEnumEntityDAOImpl` |
+| `EntityId`/`BaseEntity`（**无 code**）+ 枚举分类 | `CategoryEnumEntityDAOImpl<T, ID, E extends Enum<E>>` |
+| `EntityId`/`BaseEntity`（**无 code**）+ 动态（非枚举）分类 | `CategoryEntityDAOImpl<T, ID, E>` |
 
 ```java
 // sharp-test CodeDescriptionDAO（真实代码）
@@ -74,6 +75,17 @@ public class CodeDescriptionDAO extends CategoryEnumEntityCodeDAOImpl<CodeDescri
 public class StorageLocationDAO extends CategoryEntityCodeDAOImpl<StorageLocation, Long, String> {
     public StorageLocationDAO() {
         super("plant_code");
+    }
+}
+```
+
+**四个父类现在都支持自定义分类列名**（都有 `()` 与 `(String categoryColumnName)` 两个构造器）。两个 `*Enum*` 变体的 `(String)` 构造器是近期补上的——此前它们只有隐式无参构造器，枚举分类的表若列名不是 `category`（如叫 `type`），写 `super("type")` 会编译不过，只能改表列名或退回非 Enum 版。现在可以：
+
+```java
+@Repository
+public class SomeEnumCategoryDAO extends CategoryEnumEntityCodeDAOImpl<SomeEntity, Long, SomeEntity.TypeEnum> {
+    public SomeEnumCategoryDAO() {
+        super("type");          // 分类列是 type 而非默认的 category
     }
 }
 ```

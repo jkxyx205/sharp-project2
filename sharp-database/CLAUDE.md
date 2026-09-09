@@ -47,7 +47,7 @@ sharp-database 是一套**自研的注解驱动轻量 ORM + 分页 + 建表生�
 
 ## 使用原则
 
-1. **DAO 标准写法**：`@Repository public class XxxDAO extends EntityDAOImpl<Xxx, Long> {}`；实体带 code 用 `EntityCodeDAOImpl`；分类实体用 `CategoryEnumEntityCodeDAOImpl`（真实范例：sharp-test `UserDAO`/`IdCardDAO`/`CodeDescriptionDAO`，下游 `DictDAO`/`DocumentDAO`/`FormDAO`）。不需要专属 DAO 类时，注入 `EntityDAOSupport` 调 `getEntityDAO(Xxx.class)`。
+1. **DAO 标准写法**：`@Repository public class XxxDAO extends EntityDAOImpl<Xxx, Long> {}`；实体带 code 用 `EntityCodeDAOImpl`；分类实体按「实体是否带 code」×「分类是否为枚举」在 `Category*DAOImpl` 四件套中选（最常见 `CategoryEnumEntityCodeDAOImpl`；仅 id 无 code 的枚举分类表用 `CategoryEnumEntityDAOImpl`，见 API.md §13）。真实范例：sharp-test `UserDAO`/`IdCardDAO`/`CodeDescriptionDAO`，下游 `DictDAO`/`DocumentDAO`/`FormDAO`。不需要专属 DAO 类时，注入 `EntityDAOSupport` 调 `getEntityDAO(Xxx.class)`。分类列名不是默认的 `category` 时，四个父类都可在子类构造里 `super("列名")`。
 2. **Service 层**：继承 `BaseServiceImpl<XxxDAO, Xxx, Long>`（或 `BaseCodeServiceImpl`）白得整套 EntityDAO 委托方法；**事务加在 Service 层**（`@Transactional(rollbackFor = Exception.class)`），本模块任何类都没有 `@Transactional`。
 3. **分页**：用 `GridService`/`GridUtils`/`AbstractTableGridService`。**total（Grid.records）由框架自动生成 count SQL 计算**（`SELECT COUNT(*) FROM (去掉 order by 的原 SQL) temp`），不要自己写 count SQL，除非需要优化时才传 `countSQL` 参数。
 4. **动态条件**：`SQLParamCleaner` 的空参条件剔除与 LIKE 自动改写**只发生在两条路径**——分页/Grid SQL（`GridService/GridUtils/GridHttpServletRequestUtils`）和 `EntityDAO.select(Map)`（不带 condition 的全列动态查询）。Grid SQL 里模糊查询写 `col LIKE :param` 即可（自动改写为大小写不敏感 contains 并转义 `%`/`_`，不要自己拼 `%`）；其余 DAO 方法（`select(condition, paramMap)` 等）是直接 `NamedParameterJdbcTemplate` 绑定：condition 里的每个命名参数都必须在 Map 中有值（缺 key 抛异常），null 会绑定为 NULL（等值条件永假），动态条件需业务自己拼 condition 或用 `select(Map)`/Grid 路径。
