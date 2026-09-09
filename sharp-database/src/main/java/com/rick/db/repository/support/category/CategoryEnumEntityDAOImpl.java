@@ -1,6 +1,6 @@
 package com.rick.db.repository.support.category;
 
-import com.rick.db.repository.model.EntityIdCode;
+import com.rick.db.repository.model.EntityId;
 
 /**
  * 如果有通过枚举值静态category 会区分不同的分组，比如 CodeDescription
@@ -8,5 +8,15 @@ import com.rick.db.repository.model.EntityIdCode;
  * @author Rick.Xu
  * @date 2025/11/14 11:59
  */
-public class CategoryEnumEntityDAOImpl<T extends EntityIdCode<ID> & RowCategory<E>, ID, E extends Enum<E>> extends CategoryEntityDAOImpl<T, ID, E> {
+public class CategoryEnumEntityDAOImpl<T extends EntityId<ID> & RowCategory<E>, ID, E extends Enum<E>> extends CategoryEntityDAOImpl<T, ID, E> {
+
+    public CategoryEnumEntityDAOImpl() {
+    }
+
+    /**
+     * 分类列不是默认的 "category" 时使用（如实体字段 type → super("type")）
+     */
+    public CategoryEnumEntityDAOImpl(String categoryColumnName) {
+        super(categoryColumnName);
+    }
 }

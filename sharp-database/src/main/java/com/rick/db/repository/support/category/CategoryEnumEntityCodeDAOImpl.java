@@ -9,4 +9,14 @@ import com.rick.db.repository.model.EntityIdCode;
  * @date 2025/11/14 11:59
  */
 public class CategoryEnumEntityCodeDAOImpl<T extends EntityIdCode<ID> & RowCategory<E>, ID, E extends Enum<E>> extends CategoryEntityCodeDAOImpl<T, ID, E> {
+
+    public CategoryEnumEntityCodeDAOImpl() {
+    }
+
+    /**
+     * 分类列不是默认的 "category" 时使用（如实体字段 type → super("type")）
+     */
+    public CategoryEnumEntityCodeDAOImpl(String categoryColumnName) {
+        super(categoryColumnName);
+    }
 }
