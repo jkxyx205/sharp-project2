@@ -121,7 +121,7 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
 
     @Override
     public List<ID> selectIdsByCodes(Collection<String> codes) {
-        return select(getTableMeta().getIdMeta().idClass(), getTableMeta().getIdMeta().idPropertyName(), CODE_COLUMN_NAME + " IN (:codes)", Map.of("code", codes));
+        return select(getTableMeta().getIdMeta().idClass(), getTableMeta().getIdMeta().idPropertyName(), CODE_COLUMN_NAME + " IN (:codes)", Map.of("codes", codes));
     }
 
     @Override

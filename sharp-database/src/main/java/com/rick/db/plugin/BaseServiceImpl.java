@@ -314,7 +314,7 @@ public class BaseServiceImpl<D extends EntityDAO<T, ID>, T extends EntityId<ID>,
 
     @Override
     public int updateWithPropertyNames(String propertyNames, String condition, T example) {
-        return baseDAO.update(propertyNames, condition, example);
+        return baseDAO.updateWithPropertyNames(propertyNames, condition, example);
     }
 
     @Override
