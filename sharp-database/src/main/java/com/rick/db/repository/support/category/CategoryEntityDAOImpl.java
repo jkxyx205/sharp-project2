@@ -1,5 +1,6 @@
 package com.rick.db.repository.support.category;
 
+import com.rick.common.util.EnumUtils;
 import com.rick.db.repository.EntityDAOImpl;
 import com.rick.db.repository.model.EntityId;
 import jakarta.validation.constraints.NotNull;
@@ -74,7 +75,8 @@ public class CategoryEntityDAOImpl<T extends EntityId<ID> & RowCategory<E>, ID, 
         }
 
         if (Enum.class.isAssignableFrom(category.getClass())) {
-            return category.toString();
+            return EnumUtils.getCode((Enum) category);
+            //return category.toString();
         }
 
         return category;

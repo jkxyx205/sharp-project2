@@ -2,6 +2,7 @@ package com.rick.db.repository.support.category;
 
 import com.rick.common.function.SFunction;
 import com.rick.common.http.exception.BizException;
+import com.rick.common.util.EnumUtils;
 import com.rick.db.repository.EntityCodeDAOImpl;
 import com.rick.db.repository.model.EntityIdCode;
 import com.rick.db.util.OperatorUtils;
@@ -123,7 +124,8 @@ public class CategoryEntityCodeDAOImpl<T extends EntityIdCode<ID> & RowCategory<
         }
 
         if (Enum.class.isAssignableFrom(category.getClass())) {
-            return category.toString();
+            return EnumUtils.getCode((Enum) category);
+            //return category.toString();
         }
 
         return category;
