@@ -59,7 +59,8 @@ sharp-database 是一套**自研的注解驱动轻量 ORM + 分页 + 建表生�
 - **不要 `new EntityDAOImpl<>(...)`/`new TableDAOImpl(...)`**：DAO 必须是 Spring Bean（`@Repository` 子类或 `EntityDAOSupport` 注册），否则 `@Resource` 注入（tableDAO/conversionService/validatorHelper）与 `@Validated` 参数校验不生效。
 - **不要直接调用 `EntityDAOManager.register(...)`**：静态注册表是框架级联查询的内部机制。
 - **不要使用 `org.springframework.jdbc.core.namedparam.ParsedSqlHelper`**：它是为访问 Spring 包私有方法 `ParsedSql.getParameterNames()` 而放在 Spring 同名包下的内部工具，与 spring-jdbc 版本强耦合（见 ARCHITECTURE.md）。
-- **不要硬编码方言相关 SQL**（如 `LIMIT`、`IFNULL`、`::json`）到业务查询中，跨库需求交给 `AbstractDialect`/`SharpDatabaseProperties.type`；PostgreSQL 的 json 列用 `@Column(columnDefinition = "json")` 声明，框架自动做 `PGobject`/`::json` 处理。
+- **不要硬编码方言相关 SQL**（如 `LIMIT`、`IFNULL`、`::json`）到业务查询中，跨库需求交给 `AbstractDialect`/`SharpDatabaseProperties.type`。
+- **数据库列为 json/jsonb 时，实体属性必须显式声明 `@Column(columnDefinition = "json")` 或 `@Column(columnDefinition = "jsonb")`**（与实际列类型一致）：PostgreSQL 下框架只对显式声明的列做 `PGobject` 包装与 `::json/::jsonb` cast（`EntityDAOImpl.postgresJsonHandler`、`TableMeta.appendColumnVar`），未声明则写入失败；读取时 `PGobject` 由 `TableDAOImpl` 解包。注意声明后 `nullable/comment` 失效（DDL 直接使用 columnDefinition 原文）。详见 `docs/api/annotations.md` 与 `docs/troubleshooting.md` 第 18 条。
 - **不要信任前端 `sidx` 排序参数**：`sidx/sord` 是字符串拼接进 ORDER BY 的（非绑定参数），必须通过 `GridUtils.list(sql, params, countSQL, sortableColumns...)` 或 `AbstractTableGridService` 提供列白名单。
 - **不要用 `${...}` 模板变量承接用户输入**：`SQLParamCleaner.replaceVars` 是原样字符串替换，存在 SQL 注入风险。
 - **不要调用已废弃 API**：`com.rick.db.util.OperatorUtils`（整类 `@Deprecated`，用 sharp-common `CollectionOps` 替代）、`@Select.nullWhenParamsIsNull`（`@Deprecated`，参数为 null 时框架已默认直接返回 null）、`SQLParamCleaner.formatSql(sql, params, formatMap[, isSetIsNull])` 带外置 formatMap 的两个重载（`@Deprecated`，用返回 `FormatParam` record 的版本）。
