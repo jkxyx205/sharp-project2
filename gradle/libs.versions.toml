@@ -16,6 +16,7 @@ fastdfs = "1.29"
 pdfbox = "2.0.12"
 itext = "2.0.7"
 mysql = "5.1.47"
+jsoup = "1.17.2"
 
 [libraries]
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
@@ -29,6 +30,7 @@ fastdfs = { module = "org.csource:fastdfs-client-java", version.ref = "fastdfs" 
 pdfbox = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
 itext = { module = "com.lowagie:itext", version.ref = "itext" }
 mysql = { module = "mysql:mysql-connector-java", version.ref = "mysql" }
+jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

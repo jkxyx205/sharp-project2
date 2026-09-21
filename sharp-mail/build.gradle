@@ -1,0 +1,11 @@
+group = 'com.rick.mail'
+version = libs.versions.sharp.get()
+description = 'sharp-mail'
+
+dependencies {
+//    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    api 'org.springframework.boot:spring-boot-starter-mail'
+    api(libs.jsoup)
+
+    compileOnly 'org.projectlombok:lombok'
+}
