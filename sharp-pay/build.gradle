@@ -1,0 +1,9 @@
+group = 'com.rick.pay'
+version = libs.versions.sharp.get()
+description = 'sharp-pay'
+
+dependencies {
+    api(libs.wechatpay.java)
+    api(libs.alipay.sdk)
+    compileOnly 'org.projectlombok:lombok'
+}

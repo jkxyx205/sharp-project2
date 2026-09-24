@@ -1,0 +1,34 @@
+# sharp-pay 配置样例
+# 本文件位于 docs/，不会被打进 jar（避免重蹈 sharp-fileupload 携带开发者本机 application.yml 的覆辙）。
+# 业务工程请把需要的部分复制到自己的 application.yml。
+
+sharp:
+  pay:
+    # ===== 微信支付（API v3）===== 仅当配了 mch-id 才装配微信通道
+    wechat:
+      mch-id: 16xxxxxx                         # 商户号
+      app-id: wxXXXXXXXXXXXXXX                  # 公众号/小程序/移动应用 AppId
+      mch-serial-no: 证书序列号                 # 商户 API 证书序列号
+      private-key-path: /opt/app/cert/apiclient_key.pem   # 与 private-key 二选一
+      # private-key: |                          # PEM 内容（不含 BEGIN/END 行）
+      #   MIIE...
+      api-v3-key: 32位APIv3密钥                 # API v3 密钥
+      # cert-path: /opt/app/cert/wx_pub.pem     # 可选：平台证书路径（缺省则 SDK 自动下载）
+      notify-url: https://your.host/pay/notify  # 异步回调地址（https）
+
+    # ===== 支付宝（V2 通用版，公钥模式）===== 仅当配了 app-id 才装配支付宝通道
+    alipay:
+      app-id: 2021xxxxxxxxxxxx                 # 应用 APPID
+      private-key: |                            # PKCS8 应用私钥（不含 BEGIN/END 行）
+        MIIE...
+      alipay-public-key: 支付宝公钥              # 支付宝公钥
+      sign-type: RSA2                          # 默认 RSA2
+      charset: UTF-8                           # 默认 UTF-8
+      format: json                             # 默认 json
+      gateway: https://openapi.alipay.com/gateway.do    # 正式
+      # gateway: https://openapi.alipaydev.com/gateway.do  # 沙箱
+      notify-url: https://your.host/pay/notify # 异步回调地址
+      # 证书模式（预留，当前实现未启用）：
+      # app-cert-path: /opt/app/cert/appCertPublicKey.crt
+      # alipay-public-cert-path: /opt/app/cert/alipayCertPublicKey.crt
+      # root-cert-path: /opt/app/cert/alipayRootCert.crt

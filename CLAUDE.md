@@ -31,6 +31,7 @@
 | `sharp-meta` | `com.rick.meta` | 数据字典（Dict）+ 系统参数（Property） | ✅ `MetaServiceAutoConfiguration` | [CLAUDE](sharp-meta/CLAUDE.md) · [API](sharp-meta/API.md) · [ARCH](sharp-meta/ARCHITECTURE.md) |
 | `sharp-fileupload` | `com.rick.fileupload` | 文件存储抽象（local/MinIO/OSS/FastDFS）+ 附件落库 + 图片处理 | ✅ `FileUploadAutoConfig` | [CLAUDE](sharp-fileupload/CLAUDE.md) · [API](sharp-fileupload/API.md) · [ARCH](sharp-fileupload/ARCHITECTURE.md) · [docs/](sharp-fileupload/docs/) |
 | `sharp-formflow` | `com.rick.formflow` | 动态表单引擎（组件 + 自研校验 + EAV/宽表双存储 + 服务端渲染页面） | ✅ `FormFlowServiceAutoConfiguration` | [CLAUDE](sharp-formflow/CLAUDE.md) · [API](sharp-formflow/API.md) · [ARCH](sharp-formflow/ARCHITECTURE.md) · [docs/](sharp-formflow/docs/) |
+| `sharp-pay` | `com.rick.pay` | 支付门面：微信（API v3）+ 支付宝，扫码/JSAPI/H5/App/退款/对账/回调验签。**不落库**，纯集成（对标 `sharp-mail`） | ✅ `PayServiceAutoConfiguration`（通道按需装配） | [CLAUDE](sharp-pay/CLAUDE.md) · [API](sharp-pay/API.md) · [ARCH](sharp-pay/ARCHITECTURE.md) · [docs/](sharp-pay/docs/) |
 | `sharp-test` | `com.rick` | **本地试验场，不发布**（jar/publish 任务已禁用）。是 common/database/meta 唯一的真实用法证据源 | — | 无文档；作为示例蓝本被上述文档引用 |
 
 **文档边界**：`~/.m2/repository/com/rick/` 下还有 `admin`、`data`、`dubbo`、`excel`、`mail`、`notification`、`report`、`sms`、`sse`、`wechat`、`sharp-dependencies`、`sharp-generator`、`sharp-database2` 等构件，**均不在本仓库、不在本文档范围内**。遇到它们不要套用本仓库的结论。
@@ -49,6 +50,8 @@ sharp-database
 sharp-meta              sharp-fileupload
      ↑ implementation          ↑ Maven 坐标 3.0-SNAPSHOT（非 project 依赖，见陷阱 ④）
      └──────── sharp-formflow ─┘
+
+sharp-pay  ← 独立，无上游 project 依赖（仅官方 SDK：wechatpay-java + alipay-sdk-java）
 ```
 
 `implementation` 意味着**不传递**：业务方若要直接使用上游类型（如 `TableDAO`），必须自己再声明依赖。
@@ -71,6 +74,7 @@ sharp-meta              sharp-fileupload
 | 文件上传下载、附件关联业务单据 | `sharp-fileupload` → `FileStore` / `DocumentService` |
 | 图片缩略、裁剪、文字头像 | `sharp-fileupload` → `ImageService` |
 | 用户自定义表单（字段可配置、无需改代码） | `sharp-formflow` → `FormService` + 现成 Controller |
+| 微信/支付宝支付（下单/查询/退款/回调） | `sharp-pay` → `PayService`（**不落库**，订单自行存储；回调用 `parseNotify` 不要手写验签） |
 | 固定结构的业务表 CRUD | ❌ **不要用 formflow**，直接用 `sharp-database` |
 
 ---
@@ -117,6 +121,7 @@ sharp:
 | `sharp-meta` | `@ConditionalOnSingleCandidate(TableDAO.class)` + `@AutoConfigureAfter(SharpDatabaseAutoConfiguration)` |
 | `sharp-fileupload` | 无条件生效（含一个全放行 `CorsFilter`）；但 **Controller/Service 需业务方组件扫描 `com.rick.fileupload.client`** |
 | `sharp-formflow` | `@ConditionalOnSingleCandidate(GridService.class)` + `@AutoConfigureAfter(SharpDatabaseAutoConfiguration)`；Controller 由 `FormServiceConfiguration` 的 `@ComponentScan("com.rick.formflow.form")` 注册，**只加依赖即生效** |
+| `sharp-pay` | 无条件注册 `PayServiceAutoConfiguration`；两通道分别 `@ConditionalOnProperty(sharp.pay.wechat.mch-id / sharp.pay.alipay.app-id)` 按需装配，缺配置的通道不创建、门面调用抛 `UnsupportedOperationException` |
 
 > `sharp-fileupload` 与 `sharp-formflow` 同时存在 `META-INF/spring.factories`（Boot 2 写法）与 `META-INF/spring/...AutoConfiguration.imports`（Boot 3 写法）。**Boot 3.x 不再读取 `spring.factories` 的 `EnableAutoConfiguration` 条目**，故前者是无效残留，实际生效的是 `.imports`。
 
@@ -183,6 +188,15 @@ sharp:
 
 全仓库 grep 确认 `com.rick.formflow` 只出现在其自身内部，`sharp-test/module/form/` 是空目录、`sharp-test` 也不依赖它。**成熟度未经生产验证**，使用时应更保守：优先走现成 Controller 与 `FormService`，不要深入内部类。
 其已核实的具体缺陷：`CpnTypeEnum` 有 22 个值但只有 21 个组件实现类（`SINGLE_CHECKBOX` 无实现，使用必 NPE）；`storageStrategy=CREATE_TABLE` 且 `repositoryName` 为空时，写入分支**只剩被注释掉的代码 → 静默不存储任何数据**；默认 `tplName` 为 `"tpl/form/form"`，而模块只有 `templates/tpl/form.html` 与 `success.html` → 默认视图名解析不到。
+
+### ⑪ `sharp-pay` 不落库、不内置 Controller、不自带 `application.yml`
+
+`sharp-pay` 是纯集成门面（对标 `sharp-mail`），三个易踩点：
+- **不落库**：模块**不依赖 `sharp-database`**，订单与支付流水由业务方自行建表存储；`PayService` 只返回结构化结果，调用方负责落库。
+- **不内置回调 Controller**：模块只暴露 `PayService.parseNotify(HttpServletRequest)`，业务方需自写 `@PostMapping` 接收回调并回写 `result.getReplyContent()`（微信 JSON / 支付宝 `"success"`）。**不要自己写签名/验签**——微信经 SDK 的 `NotificationParser`（平台证书自动下载）、支付宝经 `AlipaySignature.rsaCheckV1`，手写极易出错或被绕过。
+- **通道按需装配**：未配 `sharp.pay.wechat.mch-id` 或 `sharp.pay.alipay.app-id` 的通道 Bean **不创建**，门面调用该通道抛 `UnsupportedOperationException`（设计行为，非 bug）。`PayService` 通过 `ObjectProvider` 注入两通道（可空）。
+- **配置文件归属**：模块**故意**只在 `docs/config-sample.yml` 放样例，**不**在 `src/main/resources` 放 `application.yml`（避免重蹈 `sharp-fileupload` 的覆辙——其 jar 携带开发者本机含明文口令的 yml，见陷阱 ⑤）。
+- **未联调**：实现基于 SDK 官方 API 与 javap 核实的类签名，编译/发布通过，但**无沙箱真实下单/回调联调**；上线前必须用沙箱走通 createOrder → 回调 → refund。详见 `sharp-pay/ARCHITECTURE.md` 已知缺陷。
 
 ---
 

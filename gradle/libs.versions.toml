@@ -17,6 +17,8 @@ pdfbox = "2.0.12"
 itext = "2.0.7"
 mysql = "5.1.47"
 jsoup = "1.17.2"
+wechatpay-java = "0.2.17"
+alipay-sdk = "4.40.1014.ALL"
 
 [libraries]
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
@@ -31,6 +33,8 @@ pdfbox = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
 itext = { module = "com.lowagie:itext", version.ref = "itext" }
 mysql = { module = "mysql:mysql-connector-java", version.ref = "mysql" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
+wechatpay-java = { module = "com.github.wechatpay-apiv3:wechatpay-java", version.ref = "wechatpay-java" }
+alipay-sdk = { module = "com.alipay.sdk:alipay-sdk-java", version.ref = "alipay-sdk" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
