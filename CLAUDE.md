@@ -31,6 +31,7 @@
 | `sharp-meta` | `com.rick.meta` | 数据字典（Dict）+ 系统参数（Property） | ✅ `MetaServiceAutoConfiguration` | [CLAUDE](sharp-meta/CLAUDE.md) · [API](sharp-meta/API.md) · [ARCH](sharp-meta/ARCHITECTURE.md) |
 | `sharp-fileupload` | `com.rick.fileupload` | 文件存储抽象（local/MinIO/OSS/FastDFS）+ 附件落库 + 图片处理 | ✅ `FileUploadAutoConfig` | [CLAUDE](sharp-fileupload/CLAUDE.md) · [API](sharp-fileupload/API.md) · [ARCH](sharp-fileupload/ARCHITECTURE.md) · [docs/](sharp-fileupload/docs/) |
 | `sharp-formflow` | `com.rick.formflow` | 动态表单引擎（组件 + 自研校验 + EAV/宽表双存储 + 服务端渲染页面） | ✅ `FormFlowServiceAutoConfiguration` | [CLAUDE](sharp-formflow/CLAUDE.md) · [API](sharp-formflow/API.md) · [ARCH](sharp-formflow/ARCHITECTURE.md) · [docs/](sharp-formflow/docs/) |
+| `sharp-mail` | `com.rick.mail` | 邮件收发门面：SMTP 发 + IMAP 收 + 保存已发送 + 附件/正文解析。纯集成（对标 `sharp-pay`） | ✅ `MailServiceAutoConfiguration` | [CLAUDE](sharp-mail/CLAUDE.md) · [API](sharp-mail/API.md) · [ARCH](sharp-mail/ARCHITECTURE.md) |
 | `sharp-pay` | `com.rick.pay` | 支付门面：微信（API v3）+ 支付宝，扫码/JSAPI/H5/App/退款/对账/回调验签。**不落库**，纯集成（对标 `sharp-mail`） | ✅ `PayServiceAutoConfiguration`（通道按需装配） | [CLAUDE](sharp-pay/CLAUDE.md) · [API](sharp-pay/API.md) · [ARCH](sharp-pay/ARCHITECTURE.md) · [docs/](sharp-pay/docs/) |
 | `sharp-test` | `com.rick` | **本地试验场，不发布**（jar/publish 任务已禁用）。是 common/database/meta 唯一的真实用法证据源 | — | 无文档；作为示例蓝本被上述文档引用 |
 
@@ -52,6 +53,7 @@ sharp-meta              sharp-fileupload
      └──────── sharp-formflow ─┘
 
 sharp-pay  ← 独立，无上游 project 依赖（仅官方 SDK：wechatpay-java + alipay-sdk-java）
+sharp-mail ← 独立，无上游 project 依赖（仅 spring-boot-starter-mail + jsoup）
 ```
 
 `implementation` 意味着**不传递**：业务方若要直接使用上游类型（如 `TableDAO`），必须自己再声明依赖。
@@ -75,6 +77,7 @@ sharp-pay  ← 独立，无上游 project 依赖（仅官方 SDK：wechatpay-jav
 | 图片缩略、裁剪、文字头像 | `sharp-fileupload` → `ImageService` |
 | 用户自定义表单（字段可配置、无需改代码） | `sharp-formflow` → `FormService` + 现成 Controller |
 | 微信/支付宝支付（下单/查询/退款/回调） | `sharp-pay` → `PayService`（**不落库**，订单自行存储；回调用 `parseNotify` 不要手写验签） |
+| 邮件收发（SMTP 发 / IMAP 收 / 附件下载） | `sharp-mail` → `MailHandler` + `Email.builder()` + `MailUtils` |
 | 固定结构的业务表 CRUD | ❌ **不要用 formflow**，直接用 `sharp-database` |
 
 ---
@@ -122,6 +125,7 @@ sharp:
 | `sharp-fileupload` | 无条件生效（含一个全放行 `CorsFilter`）；但 **Controller/Service 需业务方组件扫描 `com.rick.fileupload.client`** |
 | `sharp-formflow` | `@ConditionalOnSingleCandidate(GridService.class)` + `@AutoConfigureAfter(SharpDatabaseAutoConfiguration)`；Controller 由 `FormServiceConfiguration` 的 `@ComponentScan("com.rick.formflow.form")` 注册，**只加依赖即生效** |
 | `sharp-pay` | 无条件注册 `PayServiceAutoConfiguration`；两通道分别 `@ConditionalOnProperty(sharp.pay.wechat.mch-id / sharp.pay.alipay.app-id)` 按需装配，缺配置的通道不创建、门面调用抛 `UnsupportedOperationException` |
+| `sharp-mail` | `@AutoConfigureAfter(MailSenderAutoConfiguration.class)` + `@EnableConfigurationProperties(ImapMailProperties.class)`；依赖 `JavaMailSender`（由 `spring-boot-starter-mail` 提供，本模块 `api` 引入）。加依赖即生效，**无需组件扫描** |
 
 > `sharp-fileupload` 与 `sharp-formflow` 同时存在 `META-INF/spring.factories`（Boot 2 写法）与 `META-INF/spring/...AutoConfiguration.imports`（Boot 3 写法）。**Boot 3.x 不再读取 `spring.factories` 的 `EnableAutoConfiguration` 条目**，故前者是无效残留，实际生效的是 `.imports`。
 
@@ -197,6 +201,17 @@ sharp:
 - **通道按需装配**：未配 `sharp.pay.wechat.mch-id` 或 `sharp.pay.alipay.app-id` 的通道 Bean **不创建**，门面调用该通道抛 `UnsupportedOperationException`（设计行为，非 bug）。`PayService` 通过 `ObjectProvider` 注入两通道（可空）。
 - **配置文件归属**：模块**故意**只在 `docs/config-sample.yml` 放样例，**不**在 `src/main/resources` 放 `application.yml`（避免重蹈 `sharp-fileupload` 的覆辙——其 jar 携带开发者本机含明文口令的 yml，见陷阱 ⑤）。
 - **未联调**：实现基于 SDK 官方 API 与 javap 核实的类签名，编译/发布通过，但**无沙箱真实下单/回调联调**；上线前必须用沙箱走通 createOrder → 回调 → refund。详见 `sharp-pay/ARCHITECTURE.md` 已知缺陷。
+
+### ⑫ `sharp-mail` 收件非线程安全，且有几处硬编码/死代码
+
+`sharp-mail` 是纯集成门面（对标 `sharp-pay`），收件走 IMAP，三个易踩点：
+- **顶层 `EmailBuilder` 是死代码**：`com.rick.mail.core.mail.EmailBuilder` 的 `cc`/`bcc` 空实现、无 `build()` 方法、私有构造却又有 `builder()`（自相矛盾）。真正生效的是 `Email.builder()` 返回的 `Email` **内部** `EmailBuilder`（内部类优先）。`[需要确认]`：建议删除顶层 `EmailBuilder.java`。
+- **`IMAPStore` 单字段缓存非线程安全**：`MailHandlerImpl.cachedStore` 在并发收件时共享同一连接、相互 `close()`。收件请串行或自建多实例。
+- **「已发送」文件夹名硬编码中文 `"已发送"`**：`saveToOutbox` 仅适用中文邮箱服务商；Gmail（`[Gmail]/Sent Mail`）、Outlook（`Sent`）会抛 `MessagingException`。
+- **163 兼容性硬编码**：`getStore` 强制 `store.id(clientParams)`，clientParams 写死 `name=sharp-mail`/`vendor=Rick`/`support-email=jkxyx205@163.com`；`searchByMessageId` 内有 `//TODO 163 读取有问题`。
+- **`listFolders()` 后不可读邮件**：方法内 `store.close()`，返回的 `Folder` 失效（163 下尤甚，源码注释明确）；要读邮件用 `listMessages`/`searchByMessageId`。
+- **profile 参考配置含占位口令**：`application-{gmail,aliyun,qq,163}.yml` 的 `xxx` 是示例占位，仅在激活对应 profile 时加载（不像 `sharp-fileupload` 的 `application.yml` 默认加载，见陷阱 ⑤），业务方仍应用自己的授权码。
+- 详见 `sharp-mail/ARCHITECTURE.md` 已知缺陷。
 
 ---
 
