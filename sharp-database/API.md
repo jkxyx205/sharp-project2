@@ -198,7 +198,7 @@ DAO 子类可覆写的 protected 钩子（`EntityDAOImpl`）：
 
 - **JDBC batch（高性能，无级联）**：`insertWithoutCascade(Collection<T>)`、`updateWithoutCascade(Collection<T>)`、`insertOrUpdateWithoutCascade(Collection<T>)`（按 id 是否为 null 拆成前两批）、`batchUpdate(columns, condition, paramsList)`、`TableDAO.batchInsert(...)`（返回生成的主键列表）。
 - **循环单条（有级联/校验）**：`insertOrUpdate(Collection<T>)`。
-- IN 条件超过 1000 个值：查询经 `SQLParamCleaner` 自动拆成 `OR IN(...)` 组；`TableDAO.deleteIn` 自动分批删除；`deleteNotIn` 的 NOT IN **超过 1000 直接抛 `RuntimeException`**。
+- IN 条件超过 1000 个值：查询经 `SQLParamCleaner` 自动拆成 `OR IN(...)` 组；`TableDAO.deleteIn` 自动分批删除（多条语句）；`deleteNotIn` 自动在单条语句内拆成多段 `AND NOT IN`（每段 ≤1000；曾直接抛 `RuntimeException`，已修复，超大列表仍受数据库参数上限约束，见 `docs/troubleshooting.md` 第 11 条）。
 
 ## 7. 关联查询（级联语义）
 
@@ -230,7 +230,7 @@ DAO 子类可覆写的 protected 钩子（`EntityDAOImpl`）：
 | `boolean exists(String sql, ...)` | ⚠️ 拼接 `" LIMIT 1"`，Oracle/SQLServer 不适用 |
 | `int update(String tableName, String columnsCondition, String condition, Object.../Map)` | `columnsCondition` 是完整的 `col = ?, col2 = :p` 串。`track-if-has-update=true` 时先查库比对，无变化返回 0 |
 | `int[] batchUpdate(...)` | JDBC batch |
-| `int deleteIn / deleteNotIn(String tableName, String deleteColumn, Collection<?> values)` | IN 自动分批（>1000）；NOT IN >1000 抛异常 |
+| `int deleteIn / deleteNotIn(String tableName, String deleteColumn, Collection<?> values)` | IN 自动分批删除（>1000，多条语句）；NOT IN >1000 自动在单条语句内拆多段 `AND NOT IN`（每段 ≤1000） |
 | `int delete(String tableName, String condition, ...)` | condition 为空 = 删全表 |
 | `int insert(String tableName, String columnNames, Object... args / Map paramMap)` | 列名逗号串；参数个数与列数不符抛 `IllegalArgumentException`；底层 `SimpleJdbcInsert` |
 | `List<Object> batchInsert(String tableName, String columnNames, String columnsCondition, List<Object[]> paramsList)` | 返回生成的主键列表 |
@@ -399,7 +399,7 @@ DAO 子类可覆写的 protected 钩子（`EntityDAOImpl`）：
 ## 事务与异常速查
 
 - **事务边界在业务 Service 层**（sharp-test 惯例 `@Transactional(rollbackFor = Exception.class)`）；DAO/TableDAO 无事务注解，单次调用 = 单条（或 batch）语句自动提交。级联保存/删除是多次 SQL，**不加事务不具原子性**。
-- 异常谱系：Spring `DataAccessException` 原样透传（SQL 语法/约束/连接）；`IncorrectResultSizeDataAccessException`（期望单行返回多行）；`IllegalArgumentException`（Assert 参数校验、乐观锁 `version field cannot be null` / `version field is old`、insert 列数不匹配）；`ConstraintViolationException`（实体/参数 Bean Validation）；`BizException`（sharp-common，code 重复“编号已经存在”、code 回填失败“xxx code xxx 不存在”）；`RuntimeException`（NOT IN 超 1000、属性写入失败等）。处理建议见 `docs/troubleshooting.md`。
+- 异常谱系：Spring `DataAccessException` 原样透传（SQL 语法/约束/连接）；`IncorrectResultSizeDataAccessException`（期望单行返回多行）；`IllegalArgumentException`（Assert 参数校验、乐观锁 `version field cannot be null` / `version field is old`、insert 列数不匹配）；`ConstraintViolationException`（实体/参数 Bean Validation）；`BizException`（sharp-common，code 重复“编号已经存在”、code 回填失败“xxx code xxx 不存在”）；`RuntimeException`（属性写入失败等；`deleteNotIn` 超 1000 曾抛此异常，已修复为自动分段，见 `docs/troubleshooting.md` 第 11 条）。处理建议见 `docs/troubleshooting.md`。
 
 ---
 

@@ -50,9 +50,11 @@
 - **处理**：范围保存用三参 `insertOrUpdateTable(list, refColumnName, refValue)` 或五参重载，或 `CategoryEntityCodeDAOImpl.insertOrUpdate(category, list)`；给"将被删除的 id"挂 `deletedIdsConsumer` 做日志/校验（全表范围用三参 `(list, deleteItem, consumer)` 版即可，范围删除 + 回调用五参版，见第 28 条）。
 - **历史说明**：三参版曾忽略 `refColumnName/refValue` 而等效全表删除，**现已修复**（透传五参版）。若排查的是旧版本 jar 上的问题，先确认依赖版本。
 
-### 11. `RuntimeException: SQL_PATH_NOT_IN in的个数不能超过1000`
-- **触发**：`TableDAO.deleteNotIn` 值超过 1000（NOT IN 无法分批，源码显式抛错）。
-- **处理**：业务侧分批取反或改为“查全量 id → deleteIn 差集”。
+### 11. ~~`RuntimeException: SQL_PATH_NOT_IN in的个数不能超过1000`~~（已修复）
+- **旧触发**：`TableDAO.deleteNotIn` 值超过 1000 时显式抛错（NOT IN 无法像 IN 那样拆成多条 DELETE 分次执行——各分段会互删数据）。
+- **现状**：超 1000 时自动在**单条语句内**拆成多段 `AND (col NOT IN (...))`，每段 ≤ 1000 个值（命名参数展开；注意 Spring 命名参数只展开 Collection，不展开数组），业务侧无需再分批取反。
+- **残余注意**：仍是单条语句，占位符总数受数据库协议上限约束（如 PostgreSQL 单语句最多 65535 个参数）；数万以上超大列表仍建议改为“查全量 id → deleteIn 差集”。
+- **回归测试**：sharp-test `DeleteNotInTest`（含 1000 边界与跨分段用例）。
 
 ### 12. `IllegalArgumentException: 列名数量与参数数量不一致`
 - **触发**：`TableDAO.insert(tableName, columnNames, args...)` 列数 ≠ 参数数。

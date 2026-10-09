@@ -120,7 +120,21 @@ public class TableDAOImpl implements TableDAO {
     @Override
     public int deleteNotIn(String tableName, String deleteColumn, Collection<?> deleteValues) {
         if (deleteValues.size() > IN_SIZE) {
-            return deleteBySize(tableName, deleteColumn, SQL_PATH_NOT_IN, deleteValues, null, null);
+            // NOT IN 不能像 IN 那样拆成多条 DELETE 分次执行（各分段会互删数据），
+            // 故在单条语句内拆成多段 AND 连接的 NOT IN，每段值数 ≤ IN_SIZE。
+            // 注意：命名参数只展开 Collection/Iterable、不展开 Object[]，分段必须用 List
+            List<Object> values = new ArrayList<>(deleteValues);
+            StringBuilder condition = new StringBuilder();
+            Map<String, Object> paramMap = new LinkedHashMap<>();
+            for (int i = 0, chunk = 0; i < values.size(); i += IN_SIZE, chunk++) {
+                if (chunk > 0) {
+                    condition.append(" AND ");
+                }
+                String paramName = "notIn" + chunk;
+                condition.append(deleteColumn).append(" NOT IN (:").append(paramName).append(")");
+                paramMap.put(paramName, values.subList(i, Math.min(i + IN_SIZE, values.size())));
+            }
+            return delete(tableName, condition.toString(), paramMap);
         }
         return delete(tableName, deleteColumn + " NOT IN(:params)", Map.of("params", deleteValues));
     }
@@ -169,6 +183,8 @@ public class TableDAOImpl implements TableDAO {
 //        }
 
         if (SQL_PATH_NOT_IN.equals(sqlPatch) && size > IN_SIZE) {
+            // - 为什么不能像 deleteIn 那样拆多条 DELETE：NOT IN 分段分次执行会互删数据（第 1 段删掉第 2 段的保留项），所以必须单语句 AND 连接。
+            // - 分段值必须用 List（subList），不能用 Arrays.copyOfRange：Spring 命名参数只展开 Collection/Iterable、不展开 Object[]——第一版用数组直接导致 BadSqlGrammarException（数组被当标量绑定），测试抓到后已改。
             throw new RuntimeException("SQL_PATH_NOT_IN in的个数不能超过" + IN_SIZE);
         }
 

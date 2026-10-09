@@ -230,7 +230,7 @@ sharp:
 
 ### 已修复的历史缺陷（不要再用旧的规避写法）
 
-以下 8 处曾是真实缺陷，**现已在源码中修复**（后 4 处均有回归测试：sharp-test `P0FixTest`）。若在历史对话、旧注释或第三方文档里看到对应的规避建议，不要照做：
+以下 9 处曾是真实缺陷，**现已在源码中修复**（后 5 处均有回归测试：sharp-test `P0FixTest`/`DeleteNotInTest`）。若在历史对话、旧注释或第三方文档里看到对应的规避建议，不要照做：
 
 | 位置 | 旧行为 | 现状（已核实源码） |
 |---|---|---|
@@ -242,6 +242,7 @@ sharp:
 | `ExtendTableDAOImpl.tableNameDAOMap` | 无初始值，直到 `ApplicationReadyEvent` 才填充 → 启动期写入 NPE | ✅ 声明处初始化为空 `ConcurrentHashMap`，未命中回落 `EntityDAOManager` 实时查找并回填 |
 | `TableDAOImpl.execute(ConnectionCallback)` | 独立连接不参与 Spring 事务；SQLException 被 `printStackTrace` 后返回 null，旧建议"事务性操作勿用" | ✅ 委托 `JdbcTemplate.execute`：连接经 `DataSourceUtils` 获取（随事务回滚），异常转译为 `DataAccessException` 抛出 |
 | `EntityDAOImpl.insertOrUpdate(List<Map>)` | TODO 静默返回 `new int[0]`，不保存任何数据，旧建议"勿用" | ✅ 已实现：逐项委托单 Map 版（id 回填进各 Map，Map 须可变），返回每项影响行数 |
+| `TableDAOImpl.deleteNotIn` | 值超 1000 直接抛 `RuntimeException`，旧建议"业务侧分批取反或查全量 id → deleteIn 差集" | ✅ 单条语句内自动拆多段 `AND (col NOT IN (...))`（每段 ≤1000）；数万以上超大列表仍受数据库单语句参数上限约束（PG 65535），继续用差集方案 |
 
 > ⚠️ **但文件校验能力的缺失依然存在**：`FileCheckUtils` 只是个空占位类，删除它并没有带来任何校验逻辑。`sharp-fileupload` 至今**没有类型白名单、没有大小限制、没有文件名/`groupName` 消毒**（`groupName` 直接拼接存储路径，存在 `../` 逃逸可能）。这些必须由业务方自行实现。详见 `sharp-fileupload/ARCHITECTURE.md`。
 
