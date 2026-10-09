@@ -39,6 +39,12 @@ public class SQLServer2012Dialect extends AbstractDialect {
     }
 
     @Override
+    public String limitOneSql(String sql) {
+        // 不用 OFFSET..FETCH NEXT（其强制要求 ORDER BY），TOP 1 包裹对任意子查询均有效
+        return "SELECT TOP 1 * FROM (" + sql + ") " + GROUP_DUMMY_TABLE_NAME;
+    }
+
+    @Override
     public String contactString(String name) {
         // SQL Server 使用 + 进行字符串连接，而不是 CONCAT 函数
         return " '%' + UPPER(@" + name + ") + '%'";

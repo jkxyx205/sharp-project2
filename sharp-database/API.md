@@ -136,7 +136,7 @@ DAO 子类可覆写的 protected 钩子（`EntityDAOImpl`）：
 
 | 方法 | 返回 | 注意 |
 |---|---|---|
-| `boolean exists(ID id)` / `exists(String condition, Object.../Map/T example)` | boolean | 实现为 `SELECT 1 ... LIMIT 1`，⚠️ `LIMIT` 未经方言转换，Oracle/SQLServer 不适用 |
+| `boolean exists(ID id)` / `exists(String condition, Object.../Map/T example)` | boolean | 委托 `TableDAO.exists`，经 `AbstractDialect.limitOneSql` 按方言生成"取一行"SQL（MySQL/PG/SQLite `LIMIT 1`、Oracle ROWNUM 包裹、SQLServer TOP 1 包裹），全方言可用 |
 | `long count(String condition, Object.../Map/T example)` | long | `SELECT count(*)`；condition 可为 null/空（全表计数） |
 
 ### 写入
@@ -227,7 +227,7 @@ DAO 子类可覆写的 protected 钩子（`EntityDAOImpl`）：
 | `<K,V> Map<K,V> selectForKeyValue(String sql, ...)` | 两列 SQL → Map |
 | `Optional<Map<String,Object>> / Optional<E> selectForObject(...)` | 期望单行；多行抛 `IncorrectResultSizeDataAccessException` |
 | `<E> List<E> select(String sql, Map paramMap, JdbcTemplateCallback<E> callback)` | 自定义 RowMapper |
-| `boolean exists(String sql, ...)` | ⚠️ 拼接 `" LIMIT 1"`，Oracle/SQLServer 不适用 |
+| `boolean exists(String sql, ...)` | 经 `AbstractDialect.limitOneSql` 按方言生成"取一行"SQL（曾硬拼 `" LIMIT 1"`，已修复）；`ExtendTableDAOImpl` 覆写版先注入 `is_deleted` 条件再包裹 |
 | `int update(String tableName, String columnsCondition, String condition, Object.../Map)` | `columnsCondition` 是完整的 `col = ?, col2 = :p` 串。`track-if-has-update=true` 时先查库比对，无变化返回 0 |
 | `int[] batchUpdate(...)` | JDBC batch |
 | `int deleteIn / deleteNotIn(String tableName, String deleteColumn, Collection<?> values)` | IN 自动分批删除（>1000，多条语句）；NOT IN >1000 自动在单条语句内拆多段 `AND NOT IN`（每段 ≤1000） |
@@ -352,10 +352,10 @@ DAO 子类可覆写的 protected 钩子（`EntityDAOImpl`）：
 - **选择方式：纯配置驱动**（`sharp.database.type`），启动时 `getDialect` Bean 实例化对应 `AbstractDialect` 并写入静态 `Context`；`Context.getDialect()`（public）业务可读（如判断 `getType() == DatabaseType.PostgreSQL`），`setDialect` 为包私有 🚫。
 - 方言影响面：分页 SQL（LIMIT/OFFSET vs ROWNUM vs OFFSET-FETCH）、count 包装、LIKE 拼接与转义符、ORDER BY 生成、合计函数 `summaryFun`。
 - **业务代码不需要为切库改写**：EntityDAO 生成的 SQL 与 Grid 分页均走方言；例外（已知限制，写 SQL 时避免依赖）：
-  - `EntityDAO.exists` / `selectByIdWithoutCascade` / `TableDAO.exists` 硬编码 `LIMIT 1`（Oracle/SQLServer 会报错）；
+  - ~~`EntityDAO.exists` / `TableDAO.exists` 硬编码 `LIMIT 1`（Oracle/SQLServer 会报错）~~ 已修复：经 `AbstractDialect.limitOneSql` 按方言生成"取一行"SQL，回归测试 sharp-test `ExistsDialectTest`（`selectByIdWithoutCascade` 实际不用 LIMIT，其限制是硬编码 `id` 列名）；
   - PostgreSQL json 列必须 `@Column(columnDefinition="json"/"jsonb")` 声明才能正确读写（`PGobject` + `::json` 处理只对该声明生效）；
   - 业务手写 SQL 中的数据库函数（`IFNULL/NVL/CONCAT` 等）自行保证可移植。
-- 新增方言扩展点：继承 `AbstractDialect` 实现 `pageSql/contactString/escapeString/getOrderBy/getType/summaryFun`，但 `SharpDatabaseAutoConfiguration.getDialect` 是硬编码 if-else 且 `DatabaseType` 是枚举——**新方言需改模块源码**，无 SPI 注册机制（`getDialect` Bean 无 `@ConditionalOnMissingBean`，也不能被业务 Bean 覆盖后同步 `Context`/`SQLParamCleaner`，⚠️ 覆盖需三处都处理）。
+- 新增方言扩展点：继承 `AbstractDialect` 实现 `pageSql/contactString/escapeString/getOrderBy/getType/summaryFun`（`limitOneSql` 有默认 `LIMIT 1` 实现，不支持该语法的方言需覆写），但 `SharpDatabaseAutoConfiguration.getDialect` 是硬编码 if-else 且 `DatabaseType` 是枚举——**新方言需改模块源码**，无 SPI 注册机制（`getDialect` Bean 无 `@ConditionalOnMissingBean`，也不能被业务 Bean 覆盖后同步 `Context`/`SQLParamCleaner`，⚠️ 覆盖需三处都处理）。
 
 ## 17. 扩展点
 

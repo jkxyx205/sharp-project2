@@ -180,21 +180,18 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
     @Override
     public boolean exists(String condition, Object... args) {
-//        return tableDAO.exists(tableMeta.getSelectSQL("1") + SqlHelper.buildWhere(condition), args);
-        return select(String.class, "1", (StringUtils.isBlank(condition) ? "" : condition)+ " LIMIT 1", args).size() > 0;
+        // 委托 tableDAO.exists 由方言生成“取一行”SQL（此前把 " LIMIT 1" 拼进 condition，Oracle/SQLServer 不支持）
+        return tableDAO.exists(tableMeta.getSelectSQL("1") + SqlHelper.buildWhere(condition), args);
     }
 
     @Override
     public boolean exists(String condition, Map<String, Object> paramMap) {
-//        return tableDAO.exists(tableMeta.getSelectSQL("1") + SqlHelper.buildWhere(condition), paramMap);
-        return select(String.class, "1", (StringUtils.isBlank(condition) ? "" : condition)+ " LIMIT 1", paramMap).size() > 0;
+        return tableDAO.exists(tableMeta.getSelectSQL("1") + SqlHelper.buildWhere(condition), paramMap);
     }
 
     @Override
     public boolean exists(String condition, T example) {
-//        return selectWithoutCascadeSelect(String.class, "1", (StringUtils.isBlank(condition) ? "" : condition)+ " LIMIT 1", example).size() > 0;
-//        return tableDAO.exists(tableMeta.getSelectSQL("1") + SqlHelper.buildWhere(condition), getArgsFromEntity(example, true));
-        return select(String.class, "1", (StringUtils.isBlank(condition) ? "" : condition)+ " LIMIT 1", example).size() > 0;
+        return tableDAO.exists(tableMeta.getSelectSQL("1") + SqlHelper.buildWhere(condition), getArgsFromEntity(example, true));
     }
 
     @Override

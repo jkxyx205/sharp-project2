@@ -138,7 +138,7 @@ TableDAO / TableDAOImpl ──► NamedParameterJdbcTemplate / SimpleJdbcInsert 
 ## 7. 设计约束与已知限制（源码取证）
 
 1. **单数据源**：`@ConditionalOnSingleCandidate(DataSource.class)`；`Context`/`SQLParamCleaner`/`GridUtils` 均为静态单例状态，不支持多库多方言并存。
-2. **硬编码 `id` 列**：`selectByIds/deleteByIds/updateByIds/selectByIdWithoutCascade/selectById(id,SFunction)` 等的条件字面量是 `id`，主键列改名（`@Id` + `@Column("xxx")`）后这些方法失效；`exists` 系列与 `TableDAO.exists` 硬编码 `LIMIT 1`，Oracle/SQLServer 方言下报错。
+2. **硬编码 `id` 列**：`selectByIds/deleteByIds/updateByIds/selectByIdWithoutCascade/selectById(id,SFunction)` 等的条件字面量是 `id`，主键列改名（`@Id` + `@Column("xxx")`）后这些方法失效。~~`exists` 系列与 `TableDAO.exists` 硬编码 `LIMIT 1`，Oracle/SQLServer 方言下报错~~ → **已修复**：经 `AbstractDialect.limitOneSql` 按方言生成"取一行"SQL（默认 `LIMIT 1`，Oracle10g/11c `ROWNUM <= 1` 包裹，SQLServer2012 `TOP 1` 包裹），`EntityDAOImpl.exists` 委托 `TableDAO.exists`；`ExtendTableDAOImpl.exists` 在方言包裹**前**注入 `is_deleted` 条件（包裹后的嵌套子查询不再被 `SqlSingleTableChecker` 识别为单表）。回归测试：sharp-test `ExistsDialectTest`。
 3. **乐观锁非原子**：`@Version` 校验是先 SELECT 后 UPDATE，WHERE 不带版本条件（API.md §11）。
 4. **`@Select` 是 N+1**：逐行执行；`@ManyToOne/@OneToMany/@ManyToMany` 是批量 IN（每个引用字段一次）。无 JOIN 抓取。
 5. ~~三参 `insertOrUpdateTable(list, refCol, refVal)` 忽略范围参数~~ → **已修复**：现透传为五参版 `insertOrUpdateTable(entityList, refColumnName, refValue, true, null)`，范围删除生效。注意单参版 `insertOrUpdateTable(list)` 仍是全表同步语义。
@@ -148,6 +148,6 @@ TableDAO / TableDAOImpl ──► NamedParameterJdbcTemplate / SimpleJdbcInsert 
 9. **无 schema 迁移**：生成器只会 CREATE TABLE（重复执行报表已存在），无 ALTER/版本化迁移；`DbScriptUtils.importSQL` 只是脚本执行器。
 10. **动态注册的 DAO 实例无 Spring 注入**（`registerSingleton` 不走注解处理），依赖注入字段的方法（`patch` 等）受限；正式业务应声明 `@Repository` DAO 子类。
 11. **`track-if-has-update=true` 的比较**忽略审计列，且对复杂值走 `toString` 比较，json/对象列可能误判“未变化”。
-12. **Oracle/SQLServer 支持不完整**：方言存在（分页/函数），但建表生成器缺失（回退 MySQL DDL）、且限制 2 的 `LIMIT 1` 问题在这两种库上必现。
+12. **Oracle/SQLServer 支持不完整**：方言存在（分页/函数；`exists` 的"取一行"SQL 已方言化，见限制 2 已修复项），但建表生成器缺失（回退 MySQL DDL），且这两种库无真实联调验证（方言 SQL 生成仅经 `ExistsDialectTest` 字符串断言）。
 13. **`DatabaseMetaData` 静态元数据表无消费方**（仅 `init-database-meta-data=true` 时填充），用途[需要确认]。
 14. **`@CodeFillIgnore` 无引用点**（`@CodeFillUncheck` 有），语义[需要确认]。

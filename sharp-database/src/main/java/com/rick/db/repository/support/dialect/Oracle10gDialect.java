@@ -44,6 +44,11 @@ public class Oracle10gDialect extends AbstractDialect {
     }
 
     @Override
+    public String limitOneSql(String sql) {
+        return "SELECT * FROM (" + sql + ") " + GROUP_DUMMY_TABLE_NAME + " WHERE ROWNUM <= 1";
+    }
+
+    @Override
     public String contactString(String name) {
         return "'%'||UPPER(:" + name + ")||'%'";
     }

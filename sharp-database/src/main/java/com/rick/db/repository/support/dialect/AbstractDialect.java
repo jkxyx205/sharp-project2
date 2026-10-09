@@ -40,6 +40,14 @@ public abstract class AbstractDialect {
     }
 
     /**
+     * 生成“只取第一行”的 SQL（exists 判断用）。
+     * 默认 LIMIT 1 语法（MySQL/PostgreSQL/SQLite 均支持），Oracle/SQLServer 由子类覆写为各自语法。
+     */
+    public String limitOneSql(String sql) {
+        return sql + " LIMIT 1";
+    }
+
+    /**
      * 去除sql的orderBy子句。
      *
      * @param

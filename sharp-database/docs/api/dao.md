@@ -46,7 +46,7 @@ List<T> select(@NotBlank String columns, String condition, T example);
 <E> List<E> select(@NotNull Class<E> clazz, @NotBlank String columns, String condition, T example);
 <E> List<E> select(@NotNull Class<E> clazz, @NotBlank String columns, String condition, Map<String, Object> paramMap);
 
-boolean exists(String condition, Object... args);         // ⚠️ 实现拼 " LIMIT 1"
+boolean exists(String condition, Object... args);         // 委托 TableDAO.exists，按方言生成"取一行"SQL
 boolean exists(String condition, Map<String, Object> paramMap);
 boolean exists(String condition, T example);
 long count(String condition, Object... args);             // SELECT count(*)

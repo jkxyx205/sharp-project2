@@ -109,6 +109,13 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
         return super.select(addIsDeletedCondition(sql), args);
     }
 
+    @Override
+    public boolean exists(String sql, Object... args) {
+        // is_deleted 条件必须在原始 SQL 上注入：Oracle/SQLServer 经方言 limitOneSql 包裹后
+        // 是嵌套子查询，不再被 SqlSingleTableChecker 识别为单表（父类 exists 内部走 select(sql, args) 覆写，已注入则自动跳过）
+        return super.exists(addIsDeletedCondition(sql), args);
+    }
+
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
         EntityDAOManager.getAllEntityDAO().forEach(entityDAO -> tableNameDAOMap.put(entityDAO.getTableMeta().getTableName(), entityDAO));

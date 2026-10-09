@@ -70,7 +70,7 @@
 - **处理**：把实体包加入扫描，或为其声明 DAO。
 
 ### 15. 分页/排序异常
-- `BadSqlGrammarException ... LIMIT`：`type` 配置为 Oracle/SQLServer 但 SQL 里（或 `exists` 实现里）出现 `LIMIT`。`EntityDAO.exists`/`TableDAO.exists` 硬编码 `LIMIT 1`，**Oracle/SQLServer 下不可用**，改 `count(...)>0`。
+- `BadSqlGrammarException ... LIMIT`：`type` 配置为 Oracle/SQLServer 但业务手写 SQL 里出现 `LIMIT`。~~`EntityDAO.exists`/`TableDAO.exists` 硬编码 `LIMIT 1`，Oracle/SQLServer 下不可用，改 `count(...)>0`~~ **已修复**：exists 系列经 `AbstractDialect.limitOneSql` 按方言生成"取一行"SQL（Oracle ROWNUM 包裹、SQLServer TOP 1 包裹），回归测试见 sharp-test `ExistsDialectTest`；业务手写 SQL 中的 `LIMIT` 仍需自行避免。
 - 排序不生效：`sidx` 未命中白名单（`GridUtils.sortable` 忽略大小写精确匹配列名）或 `sord` 为空；MySQL 方言要求查询列含 `id`（追加 `temp_.id ASC` 稳定序）。
 - 排序报 Unknown column：`sidx` 必须是**结果集列名/别名**（拼在包装查询 `SELECT * FROM (sql) temp_ ORDER BY ...` 上）。
 

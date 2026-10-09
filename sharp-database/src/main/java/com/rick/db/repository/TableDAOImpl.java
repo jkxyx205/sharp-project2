@@ -2,6 +2,7 @@ package com.rick.db.repository;
 
 import com.rick.common.util.JsonUtils;
 import com.rick.common.util.ObjectUtils;
+import com.rick.db.config.Context;
 import com.rick.db.config.SharpDatabaseProperties;
 import com.rick.db.repository.support.SqlHelper;
 import com.rick.db.util.OperatorUtils;
@@ -60,12 +61,12 @@ public class TableDAOImpl implements TableDAO {
 
     @Override
     public boolean exists(String sql, Object... args) {
-        return select(sql + " LIMIT 1", args).size() > 0;
+        return select(Context.getDialect().limitOneSql(sql), args).size() > 0;
     }
 
     @Override
     public boolean exists(String sql, Map<String, Object> paramMap) {
-        return select(sql + " LIMIT 1", paramMap).size() > 0;
+        return select(Context.getDialect().limitOneSql(sql), paramMap).size() > 0;
     }
 
     @Override
