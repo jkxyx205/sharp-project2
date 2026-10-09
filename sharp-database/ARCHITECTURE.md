@@ -98,7 +98,7 @@ TableDAO / TableDAOImpl ──► NamedParameterJdbcTemplate / SimpleJdbcInsert 
   → QueryModel.of(map) 抽取 PageModel（缺省 page=1,size=15；size=-1 → 全量模式）
   → GridUtils.setOrderParams：sidx 必须命中 sortableColumns 白名单，经 dialect.getOrderBy 生成
     "temp_.col asc, temp_.id ASC"（MySQL5 追加 id 保证稳定序）
-  → GridService.query：
+  → GridService.query（入口兜底校验：sidx 仅 [A-Za-z0-9_.]、sord 仅 [A-Za-z0-9_.,空白]，非法抛 IllegalArgumentException）：
       SQLParamCleaner.formatSql（空参条件剔除 / IN 展开 / LIKE 改写）
       → countSQL（默认 dialect.formatSqlCount = SELECT COUNT(*) FROM (去 order by 的 SQL) temp）→ records
       → records=0 → Grid.emptyInstance

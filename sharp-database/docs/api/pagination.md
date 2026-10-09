@@ -21,8 +21,8 @@
 |---|---|---|---|---|
 | `page` | `PageModel.PARAM_PAGE` | int | 1 | 当前页，从 1 开始；越界自动钳制（>totalPages → totalPages；<1 → 1） |
 | `size` | `PageModel.PARAM_SIZE` | int | 15 | 每页条数；`-1` = 不分页查全部；`<1`（非 -1）→ 15；`>1000` → 1000 |
-| `sidx` | `PageModel.PARAM_SIDX` | String | null | 排序列（**列名**，字符串拼接进 ORDER BY，须白名单控制） |
-| `sord` | `PageModel.PARAM_SORD` | String | null | 排序方向；`asc`（忽略大小写）为升序，其余按降序生成；sidx/sord 任一为空 → 不排序 |
+| `sidx` | `PageModel.PARAM_SIDX` | String | null | 排序列（**单个列名**，字符串拼接进 ORDER BY，须白名单控制；模块侧兜底仅允许 `^[A-Za-z0-9_.]+$`，非法抛 `IllegalArgumentException`） |
+| `sord` | `PageModel.PARAM_SORD` | String | null | 排序方向；`asc`（忽略大小写）为升序，其余按降序生成；sidx/sord 任一为空 → 不排序；兜底字符集 `[A-Za-z0-9_.,空白]` |
 
 业务过滤参数与分页参数放在同一个 Map/请求中即可（如 `name`、`code`），SQL 用 `:name` 引用；未使用的 key 自动忽略。
 
@@ -67,7 +67,7 @@ public <T> Grid<T> query(String sql, PageModel model, Map<String, Object> params
 
 ```java
 public static Grid<Map<String, Object>> list(String sql, Map<String, Object> params);
-// 排序白名单 = params 里的 sidx 自身（等于不校验）
+// 排序白名单 = params 里的 sidx 自身（任意列可排，仅剩 GridService.query 的字符集兜底）
 public static Grid<Map<String, Object>> list(String sql, Map<String, Object> params, String countSQL);
 public static Grid<Map<String, Object>> list(String sql, Map<String, Object> params, String countSQL, String... sortableColumns);
 // ✅ 推荐：显式给出允许排序的列白名单（列名，忽略大小写匹配 sidx）
@@ -162,6 +162,8 @@ public static Map<String, Long> limitPages(long total, long displayPage, long ac
 
 ## 安全注意（源码依据）
 
-1. `sidx/sord` **字符串拼接**进 ORDER BY（`AbstractDialect.pageSql/wrapSordString`），不是绑定参数。唯一防线是 `GridUtils.sortable()` 白名单；两参/三参 `list` 的白名单取自请求自身，等于不设防。**对外接口必须用四参 `list(sql, params, countSQL, sortableColumns...)` 显式白名单**。
+1. `sidx/sord` **字符串拼接**进 ORDER BY（`AbstractDialect.pageSql/wrapSordString`），不是绑定参数。两道防线：
+   ① **列级白名单** `GridUtils.sortable()`——但两参/三参 `list`（及 `AbstractTableGridService`）的白名单取自请求 sidx 自身，等于不设防，**对外接口必须用四参 `list(sql, params, countSQL, sortableColumns...)` 显式白名单**；
+   ② **模块侧字符集兜底**（`GridService.query`，pageSql/wrapSordString 的唯一运行时入口）：sidx 仅允许 `[A-Za-z0-9_.]`、sord 仅允许 `[A-Za-z0-9_.,空白]`（兼容方言生成的 `"asc,temp_.id ASC"` 稳定排序组合），不匹配抛 `IllegalArgumentException`，杜绝 `;`/引号/括号/注释符注入；回归测试 sharp-test `GridSidxInjectionTest`。兜底挡不住"合法但未授权的列"排序，列级白名单不可省。
 2. 业务参数一律走 `:name`/`?` 绑定；`${name}`（`SQLParamCleaner.replaceVars`）是原样替换，禁止承接用户输入。
 3. LIKE 值中 `%`/`_` 由框架转义（`likeEscape`），业务不要预拼 `%`。

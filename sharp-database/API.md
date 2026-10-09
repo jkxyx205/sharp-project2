@@ -254,7 +254,7 @@ DAO 子类可覆写的 protected 钩子（`EntityDAOImpl`）：
   - `AbstractTableGridService`（⭐ 报表场景）：子类实现 `getListSQL()`，可选覆写 `getCountSQL()`/`getSummarySQL()`；`list(params|request)`、`summary(...)`。`DefaultTableGridService` 是它的字符串构造版。
 - **total 自动计算**：未传 `countSQL` 时框架生成 `SELECT COUNT(*) FROM (<原 SQL 去掉 order by>) temp`（`AbstractDialect.formatSqlCount`）。**不需要业务写 count SQL**，仅当默认包装性能差时才传自定义 `countSQL`。
 - **返回结构** `Grid<T>`：`page`、`pageSize`、`records`（总条数）、`totalPages`、`rows`、`additionalInfo`（query 路径不设置，为 null；仅 `Grid.emptyInstance` 初始化空 Map）。records==0 时直接返回 `Grid.emptyInstance(size)`（page=1, totalPages=0）。
-- **排序白名单**：`GridUtils.list` 默认把请求里的 `sidx` 自身当白名单（= 不设防）；需要限制时显式传 `sortableColumns`。`sidx/sord` 拼接进 SQL，存在注入面，见 CLAUDE.md 禁止行为。
+- **排序白名单 + 兜底**：`GridUtils.list` 默认把请求里的 `sidx` 自身当白名单（= 不设防）；需要限制时显式传 `sortableColumns`。`sidx/sord` 拼接进 SQL，存在注入面；模块侧兜底在 `GridService.query`（pageSql/wrapSordString 唯一运行时入口）：sidx 仅允许 `[A-Za-z0-9_.]`、sord 仅允许 `[A-Za-z0-9_.,空白]`，不匹配抛 `IllegalArgumentException`（回归测试 sharp-test `GridSidxInjectionTest`），见 CLAUDE.md 禁止行为。
 - **模糊查询**：SQL 里写 `col LIKE :param`，cleaner 自动改写为方言化的 `UPPER(col) LIKE '%…%'` 包含匹配并转义用户输入的 `%`/`_`。
 - `QueryModel`（⚠️）：`QueryModel.of(requestMap)` 把请求 Map 拆成 `PageModel` + params。`PaginationHelper.limitPages(total, displayPage, activePage)`（⚠️）：UI 页码窗口计算，返回 `startPage/endPage` Map，与查询无关。
 
@@ -493,11 +493,11 @@ long total = grid.getRecords();
 **8. 信任请求里的 `sidx`**
 
 ```java
-// 错误：GridUtils.list(sql, params) —— sidx 白名单=客户端自己传的值，等于不校验
+// 错误：GridUtils.list(sql, params) —— sidx 白名单=客户端自己传的值，任意列可排（仅剩字符集兜底）
 // 正确：显式白名单
 GridUtils.list(sql, params, null, "id", "create_time", "name");
 ```
-原因：`sidx/sord` 由方言直接拼接进 `ORDER BY`（非绑定参数）。
+原因：`sidx/sord` 由方言直接拼接进 `ORDER BY`（非绑定参数）。`GridService.query` 已有字符集兜底（sidx 仅 `[A-Za-z0-9_.]`、sord 仅 `[A-Za-z0-9_.,空白]`，不匹配抛 `IllegalArgumentException`），但挡不住"合法但未授权的列"排序，显式白名单不可省。
 
 **9. 误用内部实现类**
 

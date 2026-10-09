@@ -72,6 +72,7 @@
 ### 15. 分页/排序异常
 - `BadSqlGrammarException ... LIMIT`：`type` 配置为 Oracle/SQLServer 但业务手写 SQL 里出现 `LIMIT`。~~`EntityDAO.exists`/`TableDAO.exists` 硬编码 `LIMIT 1`，Oracle/SQLServer 下不可用，改 `count(...)>0`~~ **已修复**：exists 系列经 `AbstractDialect.limitOneSql` 按方言生成"取一行"SQL（Oracle ROWNUM 包裹、SQLServer TOP 1 包裹），回归测试见 sharp-test `ExistsDialectTest`；业务手写 SQL 中的 `LIMIT` 仍需自行避免。
 - 排序不生效：`sidx` 未命中白名单（`GridUtils.sortable` 忽略大小写精确匹配列名）或 `sord` 为空；MySQL 方言要求查询列含 `id`（追加 `temp_.id ASC` 稳定序）。
+- `IllegalArgumentException: 非法排序字段 sidx / 非法排序方式 sord`：`GridService.query` 的注入兜底——sidx 仅允许字母/数字/下划线/点（`^[A-Za-z0-9_.]+$`，单列、可带 `temp_.` 前缀），sord 仅允许字母/数字/下划线/点/逗号/空白（兼容 MySQL 方言生成的 `"asc,temp_.id ASC"` 稳定排序组合）。核对前端传参；确需多列/表达式排序时在 SQL 内写死 ORDER BY 并让 sidx/sord 留空。回归测试：sharp-test `GridSidxInjectionTest`。
 - 排序报 Unknown column：`sidx` 必须是**结果集列名/别名**（拼在包装查询 `SELECT * FROM (sql) temp_ ORDER BY ...` 上）。
 
 ### 16. LIKE 行为不一致：“Grid 里没加 % 也能模糊，DAO 里却不模糊”

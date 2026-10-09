@@ -224,7 +224,7 @@ sharp:
 - **不要混用两套校验体系**：`sharp-common`/`sharp-meta` 用 Jakarta Bean Validation（`@EnumValid`/`@PhoneValid`/`@DictType`），`sharp-formflow` 用**自研** `Validator`/`ValidatorManager`。给表单提交值（Map）加 `@Valid` 无效。
 - **不要修改任何模块的 `src/main/resources` 配置来适配自己的环境**（尤其 fileupload 的 `application.yml`、`fdfs_client.properties`）——应通过业务工程自己的配置或同名文件遮蔽。
 - **不要扫描 `com.rick.fileupload` 根包**：会把库内的 `FileUploadApplication`（`@SpringBootApplication`）当嵌套配置类处理。只扫 `com.rick.fileupload.client`。
-- **不要信任前端传入的排序参数**：Grid 的 `sidx`/`sord` 是字符串拼接进 `ORDER BY` 的（非绑定参数），必须通过 `GridUtils.list(..., sortableColumns...)` 或 `AbstractTableGridService` 提供列白名单。同理不要用 `${...}` 模板变量承接用户输入（`SQLParamCleaner.replaceVars` 是原样字符串替换，存在注入风险）。
+- **不要信任前端传入的排序参数**：Grid 的 `sidx`/`sord` 是字符串拼接进 `ORDER BY` 的（非绑定参数），对外接口应通过四参 `GridUtils.list(..., sortableColumns...)` 提供列白名单（两参/三参重载与 `AbstractTableGridService` 的白名单 = 请求 sidx 自身，等于不设防）。模块侧已有字符集兜底：`GridService.query` 对 sidx 仅允许 `[A-Za-z0-9_.]`、sord 仅允许 `[A-Za-z0-9_.,空白]`，不匹配直接抛 `IllegalArgumentException`；但兜底挡不住"合法但未授权的列"排序，显式白名单仍不可省。同理不要用 `${...}` 模板变量承接用户输入（`SQLParamCleaner.replaceVars` 是原样字符串替换，存在注入风险）。
 - **不要调用已废弃 API**：`com.rick.db.util.OperatorUtils`（整类 `@Deprecated`）、`@Select.nullWhenParamsIsNull`、`SQLParamCleaner.formatSql` 带外置 formatMap 的两个重载、`EnumJsonDeserializer`、`ClassUtils.getFieldGenericClass(Field)` 单参重载、`sharp-meta` 的 `DictValidator`/`Dict2Validator`（未注册进 `@DictType` 的 `validatedBy`，遗留死代码）。
 - **不要为了理解一个 API 扫描整个模块**。按第 1 节的顺序读文档。
 

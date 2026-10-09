@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -22,6 +23,19 @@ public class GridService {
     private static final int DEFAULT_PAGE_SIZE = 15;
 
     private static final int DEFAULT_PAGE_MAX_SIZE = 1000;
+
+    /**
+     * sidx 兜底白名单：仅允许字母/数字/下划线/点（单列，可带表前缀如 temp_.col）。
+     * ORDER BY 是字符串拼接而非绑定参数，业务侧列白名单（GridUtils.list(..., sortableColumns...)）
+     * 依赖调用方自觉，此为模块侧最后一道注入防线。
+     */
+    private static final Pattern SIDX_PATTERN = Pattern.compile("[A-Za-z0-9_.]+");
+
+    /**
+     * sord 兜底白名单：仅允许字母/数字/下划线/点/逗号/空白
+     * （需兼容方言生成的稳定排序组合，如 MySQL 的 "asc,temp_.id ASC"）。
+     */
+    private static final Pattern SORD_PATTERN = Pattern.compile("[A-Za-z0-9_.,\\s]+");
 
     @Getter
     private final TableDAO tableDAO;
@@ -65,6 +79,8 @@ public class GridService {
      * @return
      */
     public <T> Grid<T> query(String sql, PageModel model, Map<String, Object> params, JdbcTemplateCallback<T> jdbcTemplateCallback, String countSQL) {
+        validateOrderParams(model);
+
 //        Map<String, Object> formatMap = new HashMap<>();
 //        sql = SQLParamCleaner.formatSql(sql, params, formatMap);
         SQLParamCleaner.FormatParam formatParam = SQLParamCleaner.formatSql(sql, params);
@@ -109,6 +125,22 @@ public class GridService {
                 .pageSize(model.getSize())
                 .build();
         return grid;
+    }
+
+    /**
+     * sidx/sord 注入兜底校验：不匹配白名单字符集直接拒绝。
+     * 所有经 pageSql/wrapSordString 拼接 ORDER BY 的路径都汇到 query，此处是唯一收口。
+     */
+    private static void validateOrderParams(PageModel model) {
+        String sidx = model.getSidx();
+        if (StringUtils.isNotBlank(sidx) && !SIDX_PATTERN.matcher(sidx).matches()) {
+            throw new IllegalArgumentException("非法排序字段 sidx（仅允许字母/数字/下划线/点）: " + sidx);
+        }
+
+        String sord = model.getSord();
+        if (StringUtils.isNotBlank(sord) && !SORD_PATTERN.matcher(sord).matches()) {
+            throw new IllegalArgumentException("非法排序方式 sord: " + sord);
+        }
     }
 
     /**
