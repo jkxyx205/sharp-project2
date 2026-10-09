@@ -47,7 +47,7 @@
 
 ### 10. 子表/分类表数据被大面积删除
 - **触发**：调用了**单参** `insertOrUpdateTable(list)`——它是全表同步语义（`refColumnName` 为 null → 走 `deleteAll()` 或 `delete("id NOT IN (:ids)")`），会删掉不在 list 中的所有行。
-- **处理**：范围保存用三参 `insertOrUpdateTable(list, refColumnName, refValue)` 或五参重载，或 `CategoryEntityCodeDAOImpl.insertOrUpdate(category, list)`；给"将被删除的 id"挂 `deletedIdsConsumer` 做日志/校验（**注意必须用五参版**，见第 28 条）。
+- **处理**：范围保存用三参 `insertOrUpdateTable(list, refColumnName, refValue)` 或五参重载，或 `CategoryEntityCodeDAOImpl.insertOrUpdate(category, list)`；给"将被删除的 id"挂 `deletedIdsConsumer` 做日志/校验（全表范围用三参 `(list, deleteItem, consumer)` 版即可，范围删除 + 回调用五参版，见第 28 条）。
 - **历史说明**：三参版曾忽略 `refColumnName/refValue` 而等效全表删除，**现已修复**（透传五参版）。若排查的是旧版本 jar 上的问题，先确认依赖版本。
 
 ### 11. `RuntimeException: SQL_PATH_NOT_IN in的个数不能超过1000`
@@ -102,9 +102,9 @@
 - **触发**：本模块**所有类都没有 `@Transactional`**；`insertOrUpdate` 级联是多条 SQL。业务方法未加事务时各自自动提交。
 - **处理**：写操作的 Service 方法一律 `@Transactional(rollbackFor = Exception.class)`（sharp-test 惯例）。同类内部 this 调用不走代理，事务不生效——拆类或注入自身代理。
 
-### 22. `TableDAO.execute(ConnectionCallback)` 里的操作不回滚 / 返回 null
-- **触发**：该 API 从 DataSource 取**新连接**（不参与 Spring 事务），SQLException 被 `printStackTrace` 后返回 null（源码明示）。
-- **处理**：事务性操作改用 `getNamedParameterJdbcTemplate()` 或常规 API。
+### 22. ~~`TableDAO.execute(ConnectionCallback)` 里的操作不回滚 / 返回 null~~（已修复）
+- **旧行为**：该 API 从 DataSource 取**新连接**（不参与 Spring 事务），SQLException 被 `printStackTrace` 后返回 null。
+- **现状**：已改为委托 `JdbcTemplate.execute(ConnectionCallback)`——连接经 `DataSourceUtils` 获取（存在 Spring 事务时复用事务连接、可回滚），SQLException 转译为 `DataAccessException` 抛出。事务性操作无需再绕行；回归测试见 sharp-test `P0FixTest.testExecuteConnectionCallback`。
 
 ### 23. update 返回 0 但数据没变/没报错
 - **触发**：`track-if-has-update=true` 时值未变化会跳过 UPDATE 返回 0；或条件未命中；或（ExtendTableDAOImpl 逻辑删除模式下）行已 `is_deleted=true`（delete/update 条件自动带 `is_deleted = false`）。
@@ -124,31 +124,24 @@
 - **旧触发**：基类误调 `baseDAO.update(propertyNames, ...)`，属性名被当列名。
 - **现状**：`BaseServiceImpl` 已改为委托 `baseDAO.updateWithPropertyNames(...)`，属性名→列名转换由 `EntityDAOImpl` 内部的 `propertyNamesToColumns()`（按 `,` 拆分 → `TableMeta.getColumnNameByPropertyName` 映射 → 重新拼接）完成。Service 层方法可直接使用。
 
-### 27. 注册 `ExtendTableDAOImpl` 后，启动期 insert/delete 抛 `NullPointerException`
-- **触发**：`ExtendTableDAOImpl.tableNameDAOMap` 字段**无初始值**（声明为 `private Map<String, EntityDAO<?,?>> tableNameDAOMap;`），仅在 `@EventListener(ApplicationReadyEvent.class) onApplicationReady()` 中由 `EntityDAOManager.getAllEntityDAO()` 填充。而 `delete(...)` 与 `addInsertInfo(tableName, paramMap)` 都直接解引用它（`tableNameDAOMap.get(tableName)`）。因此在 `ApplicationReadyEvent` 之前执行的任何写入——`@PostConstruct`、`InitializingBean.afterPropertiesSet`、`@EventListener(ContextRefreshedEvent)`、`ApplicationRunner`/`CommandLineRunner`（二者早于 `ApplicationReadyEvent`）、以及未发布该事件的测试上下文——都会 NPE。
-- **区分**：`select` 路径不触碰 `tableNameDAOMap`，故启动期只读不报错，容易误判为"配置没问题"。
-- **处理**：把数据初始化写入推迟到 `ApplicationReadyEvent` 之后（`@EventListener(ApplicationReadyEvent.class)` 并用 `@Order` 排在框架监听器之后，或 `ApplicationRunner` 改为监听 ready 事件）；或继承 `ExtendTableDAOImpl` 在构造/字段初始化处自行填充该 map。
-- **相关**：第 24 条（逻辑删除与 `is_deleted` 过滤同样依赖该 map 是否已填充——map 未填充时 `delete` 走 NPE，而不是回落物理删除）。
+### 27. ~~注册 `ExtendTableDAOImpl` 后，启动期 insert/delete 抛 `NullPointerException`~~（已修复）
+- **旧触发**：`tableNameDAOMap` 字段**无初始值**，仅在 `@EventListener(ApplicationReadyEvent.class) onApplicationReady()` 中填充，而 `delete(...)` 与 `addInsertInfo(tableName, paramMap)` 直接解引用它 → ready 事件之前的任何写入（`@PostConstruct`、`afterPropertiesSet`、`ContextRefreshedEvent`、`ApplicationRunner`/`CommandLineRunner`、未发布该事件的测试上下文）都会 NPE（select 路径不触碰该 map，只读不报错，易误判）。
+- **现状**：字段已在声明处初始化为空 `ConcurrentHashMap`；私有 `getTableNameDAO(tableName)` 未命中时回落 `EntityDAOManager.getAllEntityDAO()` 实时查找并回填；`onApplicationReady` 改为预热填充（putAll，不再整体替换字段）。启动期写入不再 NPE，逻辑删除与审计字段填充即时生效。旧的"把写入推迟到 ready 事件之后 / 继承自填 map"规避写法不再需要。
+- **残余注意**：启动期若目标表的 DAO Bean 尚未实例化（未注册进 `EntityDAOManager`），该表的 delete 仍是物理删除、insert 不填审计字段——依赖逻辑删除的启动期写入应确保对应 DAO 已初始化。
+- **相关**：第 24 条。**回归测试**：sharp-test `P0FixTest.testExtendTableDAOBeforeApplicationReady`。
 
-### 28. `insertOrUpdateTable(list, deleteItem, deletedIdsConsumer)` 抛 NPE（**当前仍存在**）
-- **触发**：三参重载 `(Collection<T> entityList, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer)` 委托为 `insertOrUpdateTable(entityList, null, null, deleteItem, deletedIdsConsumer)`。五参实现首段是：
+### 28. ~~`insertOrUpdateTable(list, deleteItem, deletedIdsConsumer)` 抛 NPE~~（已修复）
+- **旧触发**：三参重载 `(Collection<T> entityList, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer)` 委托为 `insertOrUpdateTable(entityList, null, null, deleteItem, deletedIdsConsumer)`，五参实现首段把 null 拼成字面量 `"null = :refValue"`，且 `Map.of` 拒绝 null 值直接抛 NPE → `deleteItem=true` 且 consumer 非 null 时必崩。
+- **现状**：五参实现首段已按 `refColumnName` 分支——null → **全表范围**解析将被删除的 id（与下方 `deleteAll()` / `id NOT IN (:ids)` 删除路径语义一致），非 null → `refColumnName = ?` 参数绑定（不再用 `Map.of`）。三参版可直接使用：
   ```java
-  if (deleteItem && Objects.nonNull(deletedIdsConsumer)) {
-      Collection<ID> deletedIds = resolveDeletedIds(entityList,
-          select(..., refColumnName + " = :refValue", Map.of("refValue", refValue)));
-      ...
-  }
+  dao.insertOrUpdateTable(list, true, deletedIds -> log.info("{}", deletedIds));
   ```
-  此路径下 `refColumnName` 与 `refValue` 均为 null → 条件被拼成字面量 `"null = :refValue"`，且 `Map.of` 拒绝 null 值**直接抛 `NullPointerException`**。即：`deleteItem=true` 且传了非 null 的 consumer 时必崩。
-- **未触发的情形**：`deletedIdsConsumer` 传 null（如单参版、三参 `(list, refCol, refVal)` 版内部都传 null）时跳过该分支，正常执行。
-- **处理**：需要"将被删除的 id"回调时，**必须用五参版并显式传 `refColumnName`/`refValue`**：
-  ```java
-  dao.insertOrUpdateTable(list, "category", category.getCode(), true, deletedIds -> log.info("{}", deletedIds));
-  ```
-- **备注**：这是在三参 `(list, refCol, refVal)` 版修复后复核同族方法时发现的，尚未修复。
+  旧的"必须用五参版并显式传 refColumnName/refValue"规避写法不再需要。
+- **回归测试**：sharp-test `P0FixTest.testInsertOrUpdateTableWithDeletedIdsConsumer`。
 
-### 27. `insertOrUpdate(List<Map>)` 返回空数组无效果
-- **触发**：接口方法未实现（源码 `// TODO return new int[0]`）。勿用；循环 `insertOrUpdate(Map)` 或 batch API 替代。
+### 27. ~~`insertOrUpdate(List<Map>)` 返回空数组无效果~~（已修复）
+- **旧触发**：接口方法未实现（源码 `// TODO return new int[0]`），静默不保存任何数据。
+- **现状**：已实现——逐项委托单 Map 版（保存后 id 回填进各 Map，**Map 必须可变**，`Map.of()` 会抛 `UnsupportedOperationException`），返回每项影响行数（成功恒为 1；中途失败抛异常，原子性由 Service 层 `@Transactional` 保证）。回归测试见 sharp-test `P0FixTest.testInsertOrUpdateListOfMap`。
 
 ### 28. 动态 DAO（`EntityDAOSupport.getEntityDAO`）上 `patch()` NPE
 - **触发**：动态实例经 `registerSingleton` 注册，不走 Spring 注解注入，`validatorHelper/dbConversionService` 字段为 null（`patch()` 依赖前者）。

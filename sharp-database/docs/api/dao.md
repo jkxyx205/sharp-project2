@@ -88,7 +88,7 @@ T updateWithoutCascade(@Valid @NotNull T entity);
 
 ```java
 Collection<T> insertOrUpdate(@Valid Collection<T> entityList);            // 循环单条（含级联）
-int[] insertOrUpdate(@Valid List<Map<String, Object>> paramMap);          // 🗑 TODO 未实现，恒返回 new int[0]
+int[] insertOrUpdate(@Valid List<Map<String, Object>> paramMap);          // 逐项委托单 Map 版；每项成功记 1（失败抛异常，事务由 Service 层保证）
 Collection<T> insertWithoutCascade(Collection<T> entityList);             // JDBC batch
 Collection<T> updateWithoutCascade(Collection<T> entityList);             // JDBC batch
 Collection<T> insertOrUpdateWithoutCascade(Collection<T> entityList);     // 按 id null 与否拆两批 batch
@@ -119,11 +119,7 @@ Collection<T> insertOrUpdateTable(Collection<T> entityList, @NotNull String refC
 // ✅ 范围保存：删除限定在 refColumnName = refValue 内（曾忽略范围参数等效全表删除，已修复为透传五参版）
 
 Collection<T> insertOrUpdateTable(Collection<T> entityList, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer);
-// 🚨 仍有缺陷：该重载委托为 (entityList, null, null, deleteItem, deletedIdsConsumer)。
-//    当 deleteItem=true 且 deletedIdsConsumer 非 null 时，五参实现首段会执行
-//    select(..., refColumnName + " = :refValue", Map.of("refValue", refValue))，
-//    而此处 refColumnName/refValue 均为 null → 拼出 "null = :refValue"，且 Map.of 拒绝 null 值直接抛 NPE。
-//    需要“将被删除的 id”回调时，请改用下面的五参版并显式传 refColumnName/refValue。
+// 全表范围 + “将被删除的 id”回调（曾必 NPE，已修复：refColumnName 为 null 时按全表范围解析，与 delete 路径语义一致）。
 
 Collection<T> insertOrUpdateTable(Collection<T> entityList, @NotNull String refColumnName, @NotNull Object refValue,
                                   boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer);
@@ -195,7 +191,7 @@ Optional<T> selectByCodeWithoutCascade(@NotBlank String code);
 - `sql` 为完整语句；命名参数经 `NamedParameterJdbcTemplate` 绑定（安全），`?` 经 `JdbcTemplate` 绑定。
 - `update(tableName, columnsCondition, condition, ...)`：`columnsCondition` 是**完整 SET 片段**（`"name = ?, age = ?"` 或 `"name = :name"`）；PostgreSQL json 参数需自带 cast（接口 javadoc 原文：`?::json`）。
 - `insert(tableName, columnNames, ...)`：列数与参数数不符抛 `IllegalArgumentException("列名数量与参数数量不一致")`。
-- `execute(ConnectionCallback<T>)`：从 DataSource 取**新连接**（不参与 Spring 事务），SQLException 被 printStackTrace 后返回 null——事务性操作勿用。
+- `execute(ConnectionCallback<T>)`：委托 `JdbcTemplate.execute`——连接经 `DataSourceUtils` 获取，存在 Spring 事务时复用事务连接（可回滚）；SQLException 转译为 `DataAccessException` 抛出（曾吞异常返回 null 且不参与事务，已修复）。
 
 ## EntityDAOSupport（Bean ⭐）
 

@@ -144,7 +144,7 @@ TableDAO / TableDAOImpl ──► NamedParameterJdbcTemplate / SimpleJdbcInsert 
 5. ~~三参 `insertOrUpdateTable(list, refCol, refVal)` 忽略范围参数~~ → **已修复**：现透传为五参版 `insertOrUpdateTable(entityList, refColumnName, refValue, true, null)`，范围删除生效。注意单参版 `insertOrUpdateTable(list)` 仍是全表同步语义。
 6. ~~`EntityCodeDAOImpl.selectIdsByCodes` 参数名 bug~~ → **已修复**：参数 Map key 已改为 `"codes"`，与条件 `:codes` 匹配，可正常使用。
 7. ~~`BaseServiceImpl.updateWithPropertyNames` 误调 `baseDAO.update`~~ → **已修复**：现委托 `baseDAO.updateWithPropertyNames(propertyNames, condition, example)`，属性名→列名的转换由 `EntityDAOImpl.updateWithPropertyNames` 内部的私有方法 `propertyNamesToColumns()`（按 `,` 拆分 → `TableMeta.getColumnNameByPropertyName` 映射 → 重新拼接）统一完成。
-8. **`insertOrUpdate(List<Map>)` 未实现**（返回空数组，源码 TODO）。
+8. ~~`insertOrUpdate(List<Map>)` 未实现~~ → **已实现**：逐项委托单 Map 版（id 回填进各 Map，Map 须可变），返回每项影响行数（成功恒为 1）。
 9. **无 schema 迁移**：生成器只会 CREATE TABLE（重复执行报表已存在），无 ALTER/版本化迁移；`DbScriptUtils.importSQL` 只是脚本执行器。
 10. **动态注册的 DAO 实例无 Spring 注入**（`registerSingleton` 不走注解处理），依赖注入字段的方法（`patch` 等）受限；正式业务应声明 `@Repository` DAO 子类。
 11. **`track-if-has-update=true` 的比较**忽略审计列，且对复杂值走 `toString` 比较，json/对象列可能误判“未变化”。

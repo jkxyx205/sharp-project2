@@ -147,7 +147,7 @@ sharp:
 | 操作人 | — | ⚠️ `getUserId()` **硬编码 `return 1L`**，必须继承覆写 |
 
 两个附加风险：
-- **启动时序 NPE**：`tableNameDAOMap` 无初始值，直到 `ApplicationReadyEvent` 才填充，而 insert/delete 路径直接解引用它 → `@PostConstruct`、`afterPropertiesSet`、`ContextRefreshedEvent`、`ApplicationRunner`/`CommandLineRunner` 中的写入都会 NPE（select 路径不受影响，故启动期只读不报错，易误判）。详见 `sharp-database/docs/troubleshooting.md` 第 27 条。
+- ~~**启动时序 NPE**~~ **已修复**：`tableNameDAOMap` 已在声明处初始化为空 `ConcurrentHashMap`，未命中时回落 `EntityDAOManager` 实时查找并回填 → `ApplicationReadyEvent` 之前的写入（`@PostConstruct`、`ApplicationRunner` 等）不再 NPE，旧的"把写入推迟到 ready 事件后"规避写法作废。残余注意：启动期若目标表的 DAO Bean 尚未实例化，该表 delete 仍物理删除、insert 不填审计字段。详见 `sharp-database/docs/troubleshooting.md` 第 27 条。
 - **对下游的连带影响**：`sharp-meta` 的字典缓存加载 SQL（`DictServiceImpl.SELECT_SQL`）文本里没有 `is_deleted = false`，是否过滤完全由上表决定；`dictDAO.deleteById` 同理。已写入 `sharp-meta/API.md` 2.1 的对照表。
 - `create_time/update_time/is_deleted` 在 `BaseEntityInfo` 上是 `nullable = false`：**未注册 `ExtendTableDAOImpl` 又不手动赋值时，insert 会因 NOT NULL 约束失败**。
 
@@ -230,7 +230,7 @@ sharp:
 
 ### 已修复的历史缺陷（不要再用旧的规避写法）
 
-以下 4 处曾是真实缺陷，**现已在源码中修复**。若在历史对话、旧注释或第三方文档里看到对应的规避建议，不要照做：
+以下 8 处曾是真实缺陷，**现已在源码中修复**（后 4 处均有回归测试：sharp-test `P0FixTest`）。若在历史对话、旧注释或第三方文档里看到对应的规避建议，不要照做：
 
 | 位置 | 旧行为 | 现状（已核实源码） |
 |---|---|---|
@@ -238,6 +238,10 @@ sharp:
 | `EntityCodeDAOImpl.selectIdsByCodes` | SQL 用 `:codes` 但参数 Map key 是 `"code"` → 命名参数异常 | ✅ 已改为 `Map.of("codes", codes)`，可直接使用 |
 | `BaseServiceImpl.updateWithPropertyNames` | 属性名被当列名传给 `baseDAO.update(...)` | ✅ 已改为委托 `baseDAO.updateWithPropertyNames(...)`，由 `EntityDAOImpl` 内部的 `propertyNamesToColumns()` 完成属性名→列名转换 |
 | `FileCheckUtils`（sharp-fileupload） | 空类，零方法 | ✅ **文件已整体删除**，源码中无残留引用 |
+| `EntityDAOImpl.insertOrUpdateTable(list, deleteItem, consumer)` | `deleteItem=true` 且 consumer 非 null 时必 NPE（null refColumnName 拼成 `"null = :refValue"` + `Map.of` 拒 null），旧建议"必须用五参版" | ✅ 五参实现按 `refColumnName` 分支：null → 全表范围解析将被删除的 id（与删除路径语义一致），非 null → `= ?` 参数绑定；三参版可直接使用 |
+| `ExtendTableDAOImpl.tableNameDAOMap` | 无初始值，直到 `ApplicationReadyEvent` 才填充 → 启动期写入 NPE | ✅ 声明处初始化为空 `ConcurrentHashMap`，未命中回落 `EntityDAOManager` 实时查找并回填 |
+| `TableDAOImpl.execute(ConnectionCallback)` | 独立连接不参与 Spring 事务；SQLException 被 `printStackTrace` 后返回 null，旧建议"事务性操作勿用" | ✅ 委托 `JdbcTemplate.execute`：连接经 `DataSourceUtils` 获取（随事务回滚），异常转译为 `DataAccessException` 抛出 |
+| `EntityDAOImpl.insertOrUpdate(List<Map>)` | TODO 静默返回 `new int[0]`，不保存任何数据，旧建议"勿用" | ✅ 已实现：逐项委托单 Map 版（id 回填进各 Map，Map 须可变），返回每项影响行数 |
 
 > ⚠️ **但文件校验能力的缺失依然存在**：`FileCheckUtils` 只是个空占位类，删除它并没有带来任何校验逻辑。`sharp-fileupload` 至今**没有类型白名单、没有大小限制、没有文件名/`groupName` 消毒**（`groupName` 直接拼接存储路径，存在 `../` 逃逸可能）。这些必须由业务方自行实现。详见 `sharp-fileupload/ARCHITECTURE.md`。
 

@@ -64,7 +64,7 @@
 
 **审计字段不是框架无条件自动填充的**：`EntityDAOImpl` 只写实体上的值。只有当应用把 `ExtendTableDAOImpl` 注册为 `TableDAO` Bean（利用 `@ConditionalOnMissingBean(TableDAO.class)` 覆盖，范例 sharp-test `TestConfig`）时，insert/update 才自动填 `create_by/create_time/update_by/update_time/is_deleted`（`getUserId()` 默认返回 `1L`，**必须继承覆写为真实用户**），并且 delete 变为逻辑删除、单表 SELECT 自动追加 `is_deleted = false`。
 
-> ⚠️ **`ExtendTableDAOImpl` 的启动时序陷阱**：其 `tableNameDAOMap` 无初始值，直到 `ApplicationReadyEvent` 才填充，而 insert/delete 路径直接解引用它 → **该事件之前的任何写入（`@PostConstruct`、`afterPropertiesSet`、`ContextRefreshedEvent`、`ApplicationRunner`/`CommandLineRunner`）都会 NPE**；select 路径不受影响，故启动期只读不报错，易误判。详见 `docs/troubleshooting.md` 第 27 条。
+> ✅ **`ExtendTableDAOImpl` 的启动时序 NPE 已修复**：`tableNameDAOMap` 已在声明处初始化为空 `ConcurrentHashMap`，未命中时回落 `EntityDAOManager` 实时查找并回填，`ApplicationReadyEvent` 前的写入（`@PostConstruct`、`ApplicationRunner` 等）不再 NPE（曾必 NPE，见 `docs/troubleshooting.md` 第 27 条）。残余注意：启动期若目标表的 DAO Bean 尚未实例化（未注册进 `EntityDAOManager`），该表的 delete 仍是物理删除、insert 不填审计字段——依赖逻辑删除的启动期写入应确保对应 DAO 已初始化。
 
 辅助 DTO（⚠️，非 `@Table` 实体）：`IdValue`（`id` + `@Transient description`，equals 按 id）、`IdCodeValue`（`id`+`code`+`@Transient description`，equals 按 code）——用于 `@Select`/嵌入映射的轻量引用值。`BaseEntityInfoGetter` 是 `getBaseEntityInfo()` 接口。`DatabaseType` 为枚举：`MySQL5, MySQL8, PostgreSQL, Oracle10g, Oracle11c, SQLServer2012, SQLite`。
 
@@ -149,7 +149,7 @@ DAO 子类可覆写的 protected 钩子（`EntityDAOImpl`）：
 | `T insertOrUpdate(T entity)` | 传入实体 | id == null → insert；否则 update。`EntityCodeDAOImpl` 重写：id 为 null 但 code 已存在 → 回填 id 走 update |
 | `Collection<T> insertOrUpdate(Collection<T> entityList)` | 传入集合 | 循环单条 insertOrUpdate（含级联），非 JDBC batch |
 | `T insertOrUpdate(Map<String,Object> paramMap)` | 新实体实例 | Map key=属性名；保存后把 id 写回 paramMap |
-| `int[] insertOrUpdate(List<Map<String,Object>> paramMap)` | `new int[0]` | 🗑 源码标注 `// TODO`，**未实现，不要使用** |
+| `int[] insertOrUpdate(List<Map<String,Object>> paramMap)` | 每项影响行数（成功恒为 1） | 逐项委托单 Map 版（保存后 id 写回各 Map，**Map 必须可变**）；失败抛异常，事务由 Service 层保证。曾是 TODO 静默返回空数组，已实现 |
 | `int update(String columns, String condition, Object... args)` | 影响行数 | `columns`＝**列名**逗号串（如 `"name, age"`），生成 `SET name = ?, age = ?`；args 顺序＝列顺序＋condition 参数 |
 | `int update(String columns, String condition, Map<String,Object> paramMap)` | 影响行数 | 生成 `SET col = :属性名`；**Map key 必须是对应列的实体属性名**（含 `baseEntityInfo.xxx` 形式），condition 的命名参数也从此 Map 取 |
 | `int update(String columns, String condition, T example)` | 影响行数 | 从 example 取属性值 |
@@ -163,7 +163,7 @@ DAO 子类可覆写的 protected 钩子（`EntityDAOImpl`）：
 | `int delete(String condition, Object.../Map)` | 影响行数 | 同上；**condition 为空 = 删全表**，调用前必须校验 |
 | `Collection<T> insertOrUpdateTable(Collection<T> entityList)` | 传入集合 | “子表整表同步”：删除不在 list 中的所有行（全表范围！），再逐条 insertOrUpdate |
 | `Collection<T> insertOrUpdateTable(Collection<T> entityList, String refColumnName, Object refValue)` | 传入集合 | ✅ **范围保存**：删除限定在 `refColumnName = refValue` 范围内（等价于五参版传 `deleteItem=true, deletedIdsConsumer=null`）。曾忽略范围参数，已修复 |
-| `Collection<T> insertOrUpdateTable(Collection<T> entityList, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer)` | 传入集合 | deleteItem=true 时先回调“将被删除的 id”，再删 + 保存 |
+| `Collection<T> insertOrUpdateTable(Collection<T> entityList, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer)` | 传入集合 | **全表范围**：deleteItem=true 时先回调“将被删除的 id”，再删 + 保存（曾在 consumer 非 null 时必 NPE，已修复） |
 | `Collection<T> insertOrUpdateTable(Collection<T> entityList, String refColumnName, Object refValue, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer)` | 传入集合 | ✅ 正确用法：删除限定在 `refColumnName = refValue` 范围内 |
 | `T insertWithoutCascade(T)` / `updateWithoutCascade(T)` / 集合版本 / `insertOrUpdateWithoutCascade(Collection<T>)` | 实体/集合 | 跳过级联；集合版走 JDBC batch（IDENTITY 策略批量插入回填 id） |
 
@@ -237,7 +237,7 @@ DAO 子类可覆写的 protected 钩子（`EntityDAOImpl`）：
 | `Number insertAndReturnKey(String tableName, String columnNames, Map params, String... idColumnName)` | 自增主键回填 |
 | `void updateRefTable(String refTableName, String keyColumn, String guestColumn, Object keyInstance, Collection<?> guestInstanceIds)` | 中间表差量同步（删除多余 + 插入新增） |
 | `void execute(String sql)` | DDL/任意语句 |
-| `<T> T execute(ConnectionCallback<T> action)` | ⚠️ 从 DataSource 取**新连接**（非 Spring 事务连接），异常被吞（printStackTrace）返回 null |
+| `<T> T execute(ConnectionCallback<T> action)` | 委托 `JdbcTemplate.execute`：连接经 `DataSourceUtils` 获取（存在 Spring 事务时复用事务连接、可回滚），SQLException 转译为 `DataAccessException` 抛出（曾吞异常返回 null 且不参与事务，已修复） |
 | `NamedParameterJdbcTemplate getNamedParameterJdbcTemplate()` | 逃生舱 |
 
 异常：SQL 错误按 Spring `DataAccessException` 体系原样抛出（`BadSqlGrammarException`、`DuplicateKeyException` 等），模块未包装自定义异常。
