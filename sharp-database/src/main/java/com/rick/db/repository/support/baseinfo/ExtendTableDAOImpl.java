@@ -13,11 +13,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static com.rick.db.repository.support.Constants.*;
 
@@ -28,7 +27,7 @@ import static com.rick.db.repository.support.Constants.*;
 @Slf4j
 public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
 
-    private Map<String, EntityDAO<?, ?>> tableNameDAOMap;
+    private Map<String, EntityDAO<?, ?>> tableNameDAOMap = new ConcurrentHashMap<>();
 
     public ExtendTableDAOImpl(NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
         super(namedParameterJdbcTemplate);
@@ -77,7 +76,7 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
 
     @Override
     public int delete(String tableName, String condition, Object... args) {
-        if (Objects.nonNull(tableNameDAOMap.get(tableName))) {
+        if (Objects.nonNull(getTableNameDAO(tableName))) {
             return update(tableName, LOGIC_DELETE_COLUMN_NAME + " = ?", condition + " AND "+LOGIC_DELETE_COLUMN_NAME+" = false", ArrayUtils.addAll(new Object[]{true}, args));
         } else {
             return super.delete(tableName, condition, args);
@@ -86,7 +85,7 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
 
     @Override
     public int delete(String tableName, String condition, Map<String, Object> paramMap) {
-        if (Objects.nonNull(tableNameDAOMap.get(tableName))) {
+        if (Objects.nonNull(getTableNameDAO(tableName))) {
             Map<String, Object> mergedParamMap = new HashMap<>(paramMap);
             mergedParamMap.put("deleted", true);
             return update(tableName, LOGIC_DELETE_COLUMN_NAME + " = :deleted", condition + " AND "+LOGIC_DELETE_COLUMN_NAME+" = false", mergedParamMap);
@@ -112,11 +111,28 @@ public class ExtendTableDAOImpl extends TableDAOImpl implements TableDAO {
 
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
-        tableNameDAOMap =  EntityDAOManager.getAllEntityDAO().stream().collect(Collectors.toMap(entityDAO -> entityDAO.getTableMeta().getTableName(), Function.identity()));
+        EntityDAOManager.getAllEntityDAO().forEach(entityDAO -> tableNameDAOMap.put(entityDAO.getTableMeta().getTableName(), entityDAO));
+    }
+
+    /**
+     * 按表名查 EntityDAO：缓存未命中（如 ApplicationReadyEvent 之前的启动期写入）时
+     * 回落 {@link EntityDAOManager} 实时查找并回填，避免 NPE
+     */
+    private EntityDAO<?, ?> getTableNameDAO(String tableName) {
+        EntityDAO<?, ?> entityDAO = tableNameDAOMap.get(tableName);
+        if (Objects.isNull(entityDAO)) {
+            entityDAO = EntityDAOManager.getAllEntityDAO().stream()
+                    .filter(dao -> tableName.equals(dao.getTableMeta().getTableName()))
+                    .findFirst().orElse(null);
+            if (Objects.nonNull(entityDAO)) {
+                tableNameDAOMap.put(tableName, entityDAO);
+            }
+        }
+        return entityDAO;
     }
 
     private Map<String, Object> addInsertInfo(String tableName, Map<String, Object> paramMap) {
-        if (Objects.nonNull(tableNameDAOMap.get(tableName))) {
+        if (Objects.nonNull(getTableNameDAO(tableName))) {
             LocalDateTime now = LocalDateTime.now();
             long userId = getUserId();
 

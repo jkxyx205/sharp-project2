@@ -605,8 +605,11 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
     @Override
     public Collection<T> insertOrUpdateTable(Collection<T> entityList, String refColumnName, Object refValue, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer) {
         if (deleteItem && Objects.nonNull(deletedIdsConsumer)) {
-            // 检查 id 是否允许被删除
-            Collection<ID> deletedIds = resolveDeletedIds(entityList, select(tableMeta.getIdMeta().idClass(), tableMeta.getIdMeta().idPropertyName(), refColumnName + " = :refValue", Map.of("refValue", refValue)));
+            // 检查 id 是否允许被删除（refColumnName 为 null 时为全表范围，与下方 delete 路径语义一致）
+            List<ID> idInDbList = Objects.isNull(refColumnName)
+                    ? select(tableMeta.getIdMeta().idClass(), tableMeta.getIdMeta().idPropertyName(), "")
+                    : select(tableMeta.getIdMeta().idClass(), tableMeta.getIdMeta().idPropertyName(), refColumnName + " = ?", refValue);
+            Collection<ID> deletedIds = resolveDeletedIds(entityList, idInDbList);
             if (CollectionUtils.isNotEmpty(deletedIds))
                 deletedIdsConsumer.accept(deletedIds);
         }
@@ -731,8 +734,16 @@ public class EntityDAOImpl<T, ID> implements EntityDAO<T, ID> {
 
     @Override
     public int[] insertOrUpdate(List<Map<String, Object>> paramMap) {
-        // TODO
-        return new int[0];
+        if (CollectionUtils.isEmpty(paramMap)) {
+            return new int[0];
+        }
+        int[] rows = new int[paramMap.size()];
+        for (int i = 0; i < paramMap.size(); i++) {
+            // 单 Map 版成功即保存一行（失败抛异常，事务由 Service 层保证）
+            insertOrUpdate(paramMap.get(i));
+            rows[i] = 1;
+        }
+        return rows;
     }
 
     @Override
