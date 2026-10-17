@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 /**
  * @author Rick.Xu
  * @date 2026/5/3 20:12
+ * @see org.springframework.dao.support.DataAccessUtils
  */
 @UtilityClass
 public class CollectionOps {
