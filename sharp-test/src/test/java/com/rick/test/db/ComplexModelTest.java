@@ -69,7 +69,8 @@ public class ComplexModelTest {
                 .categoryDictList(Arrays.asList(new DictValue("MATERIAL"), new DictValue("SALES_ORG")))
                 .embeddedValue(new EmbeddedValue(new DictValue("HIBE"), "texg"))
                 .category(CodeDescription.CategoryEnum.MATERIAL)
-                .workStatus(ComplexModel.WorkStatusEnum.FINISHED).build());
+                .workStatus(ComplexModel.WorkStatusEnum.FINISHED)
+                .itemCategory(ComplexModel.ItemCategoryEnum.STANDARD).build());
 
         id = complexModel.getId();
         entity = complexModel;
@@ -78,7 +79,7 @@ public class ComplexModelTest {
     @Test
     @Order(2)
     public void testSelectComplexModel() {
-        Optional<ComplexModel> optional = complexModelDAO.selectById(id);
+        Optional<ComplexModel> optional = complexModelDAO.selectById(856759492044419072L);
         ComplexModel complexModel = optional.get();
         System.out.println(complexModel);
 
@@ -95,7 +96,7 @@ public class ComplexModelTest {
 
     @AfterAll
     public void afterAll() {
-        jdbcTemplate.execute("truncate table t_complex_model");
+//        jdbcTemplate.execute("truncate table t_complex_model");
     }
 
     // ========== 方案1: 使用反射检查所有字段 (推荐) ==========
