@@ -74,6 +74,9 @@ public class ComplexModel extends BaseEntity<Long> {
     @Column(comment = "状态")
     WorkStatusEnum workStatus;
 
+    @Column(comment = "行项目类型")
+    ItemCategoryEnum itemCategory;
+
     @Embedded(columnPrefix="category_")
     @JsonAlias("categoryDict")
     @JsonDeserialize(using = EntityWithCodePropertyDeserializer.class)
@@ -144,6 +147,39 @@ public class ComplexModel extends BaseEntity<Long> {
 
         public static WorkStatusEnum valueOfCode(int code) {
             return codeMap.get(code);
+        }
+    }
+
+    @AllArgsConstructor
+    @Getter
+    @JsonFormat(shape = JsonFormat.Shape.OBJECT)
+    public enum ItemCategoryEnum {
+        STANDARD("", "Standard"),
+        CONSIGNMENT("K", "Consignment"),
+        SUBCONTRACTING("L", "Subcontracting"),
+        THIRD_PARTY("S", "Third-party"),
+        TEXT("T", "Text");
+
+        private final String code;
+        private final String description;
+
+        /**
+         * code枚举 必须重写toString()
+         *
+         * @return
+         */
+        @Override
+        public String toString() {
+            return code;
+        }
+
+        public static ItemCategoryEnum valueOfCode(String code) {
+            for (ItemCategoryEnum category : ItemCategoryEnum.values()) {
+                if (category.getCode().equals(code)) {
+                    return category;
+                }
+            }
+            return null;
         }
     }
 }
