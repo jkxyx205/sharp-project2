@@ -403,11 +403,11 @@ public class TableDAOImpl implements TableDAO {
                 m.put((K) rs.getObject(1), (V) rs.getObject(2));
             });
 
-            return null;
+            return List.of(m);
         });
-        if (log.isDebugEnabled()) {
-            log.debug("SQL => [{}], paramMap => [{}], results = [{}]", sql, paramMap, m);
-        }
+//        if (log.isDebugEnabled()) {
+//            log.debug("SQL => [{}], paramMap => [{}], results = [{}]", sql, paramMap, m);
+//        }
         return m;
     }
 
