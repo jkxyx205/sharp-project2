@@ -537,7 +537,7 @@
 1. **API**：`com.rick.common.http.json.deserializer.EnumCustomizeDeserializer extends JsonDeserializer<Enum<?>> implements ContextualDeserializer`。
 2. **用途**：Spring MVC ObjectMapper 的**全局 Enum 反序列化器**——由 `SharpWebMvcConfigurer.register(ObjectMapper)` 以 `simpleModule.addDeserializer(Enum.class, ...)` 注册，业务无需任何注解。
 3. **接受的 JSON 形态**（源码核实）：
-   - 字符串 → 调枚举静态 `valueOfCode(String)`，无此方法则回退 `Enum.valueOf(name)`；空白串 → null；
+   - 字符串 → 调枚举静态 `valueOfCode(String)`，无此方法则回退 `Enum.valueOf(name)`；**code 允许为 `''`**（不再把空白串短路成 null）：`''` 走同样解析流程，可命中以 `''` 为 code 的常量；无 `valueOfCode` 方法时 `Enum.valueOf("")` 抛 `JsonParseException`；
    - 整数 → 调 `valueOfCode(int)`，无则回退 `Enum.valueOf(数字字符串)`；
    - 对象 → 必须含 `code` 字段（String 或 Number），按上面规则解析；无 code 抛 `JsonParseException`；
    - null → null；其他 token → 抛 `JsonParseException`。
@@ -725,11 +725,14 @@
 
 | 签名 | 语义 |
 |---|---|
-| `Enum valueOfCode(Class enumType, String code)` | code 空白→null。枚举有静态 `valueOfCode` 方法：参数是 int/Integer 则 `parseInt` 后调用，否则按 String 调用；调用异常 printStackTrace 后**落到下一行**。没有该方法（或调用失败）→ 回退 `Enum.valueOf(enumType, code)`，**名字不匹配抛 `IllegalArgumentException`**（javadoc 写"返回 null"，与实现不符，以实现为准） |
-| `List<String> getCodes(Class enumType)` | ⚠️ 名字有误导：返回 `String.valueOf(枚举常量)` 列表，即 **name()**（除非枚举覆写了 toString），不是 getCode() 的值 |
+| `<C, E extends Enum<E> & IEnum<C>> E fromCode(Class<E> enumType, C code)` | **类型安全版**，仅收 `IEnum` 枚举：进程级缓存 map（O(1)）按 code 查常量，code 允许 `''`；入参 null/未找到 → null；**枚举存在重复 code → `IllegalStateException`**（缓存构建时抛）。与下一行方法的 IEnum 分支共享同一份缓存 |
+| `Enum<?> valueOfCode(Class<?> enumType, String code)` | String 版（GET 参数转换 `CodeToEnumConverterFactory`、`@EnumValid` 校验的底层）。① `IEnum` 枚举：走 `fromCode` 同一份缓存 map；code 与 `getCode()` 按 equals 匹配，故 `IEnum<Integer>` 传 `"1"` **不命中**（需要命中请用 `fromCode(type, 1)`）；② 非 `IEnum` 枚举：优先调枚举静态 `valueOfCode`（Method 已缓存；参数是 int/Integer 则 `parseInt` 后调用，否则按 String 调用），调用异常（如 int-code 枚举传入常量名导致 parseInt 失败）记 log.debug 后落到 ③；③ 回退 `Enum.valueOf(enumType, code)`：**名字不匹配抛 `IllegalArgumentException`**。入参 null/非枚举/code 为 null → null |
+| `List<String> getCodes(Class enumType)` | `IEnum` 枚举 → `String.valueOf(getCode())` 列表；非 `IEnum` → `String.valueOf(枚举常量)` 列表，即 **name()**（除非枚举覆写了 toString） |
 | `Object getCode(Enum en)` | 反射调 `getCode()`，无此方法/异常 → 返回 `en.name()` |
 | `Object getLabel(Enum en)` | 反射调 `getLabel()`，同上回退 name() |
 | `Object getData(Enum en, String getMethodName)` | 上两条的通用形式 |
+
+配套类型：`com.rick.common.util.model.IEnum<C>`（`C getCode()` + `String getLabel()`）——枚举实现它即可获得 `fromCode` 的 O(1) 类型安全查找与 `getCodes` 的 code 语义。
 
 ## HtmlTagUtils ⚠️
 
