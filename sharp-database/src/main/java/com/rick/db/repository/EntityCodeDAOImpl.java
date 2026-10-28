@@ -2,6 +2,7 @@ package com.rick.db.repository;
 
 import com.rick.common.function.SFunction;
 import com.rick.common.http.exception.BizException;
+import com.rick.common.http.exception.ExceptionCode;
 import com.rick.db.repository.model.EntityIdCode;
 import com.rick.db.repository.support.InsertUpdateCallback;
 import com.rick.db.util.OperatorUtils;
@@ -69,6 +70,11 @@ public class EntityCodeDAOImpl<T extends EntityIdCode<ID>, ID> extends EntityDAO
     @Override
     public Collection<T> insertOrUpdateTable(Collection<T> entityList, String refColumnName, Object refValue, boolean deleteItem, Consumer<Collection<ID>> deletedIdsConsumer) {
         fillEntityIdsByCodes(this, entityList, refColumnName, refValue);
+
+        if (CollectionUtils.isNotEmpty(entityList)) {
+            ExceptionCode.state(!OperatorUtils.hasDuplicates(entityList.stream().map(T::getCode).collect(Collectors.toList())), "code 不能重复");
+        }
+
         return super.insertOrUpdateTable(entityList, refColumnName, refValue, deleteItem, deletedIdsConsumer);
     }
 
