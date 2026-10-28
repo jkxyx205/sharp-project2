@@ -5,9 +5,7 @@ import com.rick.common.util.CollectionOps;
 import com.rick.db.repository.model.EntityId;
 import lombok.experimental.UtilityClass;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -17,7 +15,6 @@ import java.util.stream.Collectors;
  * 可用 DataAccessUtils 替代
  */
 @UtilityClass
-@Deprecated
 public class OperatorUtils {
 
     @Deprecated
@@ -43,5 +40,14 @@ public class OperatorUtils {
     @Deprecated
     public static <R, T> Map<R, List<T>> groupMap(List<T> list, SFunction<T, R> function) {
         return CollectionOps.groupMap(list, function);
+    }
+
+    public boolean hasDuplicates(List<String> codes) {
+        if (codes == null || codes.isEmpty()) {
+            return false;
+        }
+
+        Set<String> set = new HashSet<>(codes);
+        return set.size() < codes.size();
     }
 }
